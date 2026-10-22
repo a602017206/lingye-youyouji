@@ -1,0 +1,165 @@
+/* 新营地：轻量绘本卡片，手机纵向布局；尚无独立建筑贴图，使用现有UI图标。 */
+
+/* D2-B：仅在提供了通过验收的独立PNG时显示正式图像，不用拼贴图。 */
+.camp-original-item-icon{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.camp-supply-icon{width:27px;height:27px;flex:none;display:grid;place-items:center}.camp-supply-icon .icon{width:20px;height:20px}
+.camp-resource-icon{display:grid;place-items:center;width:32px;height:32px;flex:none;color:var(--theme-muted);background:var(--theme-soft);border-radius:8px}
+.camp-resource-icon .camp-original-item-icon{width:30px;height:30px}
+.camp-resource-icon .icon{height:20px;width:20px}
+.c4-garden-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.c4-auto-plot{border-color:var(--theme-line)}
+.c4-auto-plot.is-on{background:var(--theme-ink);color:var(--theme-panel)}
+@media(max-width:520px){.c4-garden-actions{flex-direction:column;align-items:stretch;min-width:93px}.c4-garden-actions button{width:100%}}
+
+
+/* C5营地场景：直接使用现有、确实存在的原创林地背景，叠加可操作建筑铭牌。 */
+.camp-scene{position:relative;min-height:270px;overflow:hidden;border-radius:18px;border:1px solid rgba(91,118,89,.38);
+  background:linear-gradient(120deg,rgba(21,53,45,.88) 0%,rgba(21,53,45,.55) 52%,rgba(27,47,32,.35)),var(--camp-landscape) center/cover no-repeat;
+  box-shadow:0 15px 36px rgba(36,53,34,.12);color:#fffbe5}
+.camp-scene-head{padding:22px 24px 6px;display:flex;align-items:start;justify-content:space-between;gap:20px}
+.camp-scene-overline{font-size:10px;letter-spacing:2px;color:#cdebb5}
+.camp-scene h2{font-size:25px;line-height:1.2;margin:6px 0;color:#fffbe5}
+.camp-scene p{font-size:12px;color:#e7f3dd;line-height:1.6;max-width:510px}
+.camp-scene-stats{min-width:116px;display:flex;flex-direction:column;gap:4px;align-items:center;padding:9px 16px;border:1px solid #d6e0b85c;background:rgba(23,47,36,.55);border-radius:13px;backdrop-filter:blur(8px)}
+.camp-scene-stats span{font-size:11px;color:#f0f4d5}.camp-scene-stats strong{font-size:22px;color:#fff}
+.camp-scene-stats small{font-size:10px;color:#c4ddb8}
+.camp-scene-map{display:flex;justify-content:space-between;align-items:end;gap:12px;padding:44px 22px 24px}
+.camp-scene-marker{display:flex;align-items:center;gap:8px;padding:10px 11px;border-radius:11px;border:1px solid rgba(242,238,201,.50);color:#fbf6d7;
+  background:rgba(31,51,35,.78);box-shadow:0 4px 14px rgba(0,0,0,.24);text-decoration:none;transition:transform .16s}
+.camp-scene-marker:hover{transform:translateY(-4px)}.camp-scene-marker .icon{width:22px;height:22px;flex:none}
+.camp-scene-marker span{font-size:11px;white-space:nowrap;font-weight:600}
+.c5-facilities-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.c5-facility{display:flex;align-items:center;gap:10px;min-width:0;background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:13px;padding:13px}
+.c5-facility-sign{flex:none;width:45px;height:45px;border:1px solid var(--theme-line);background:var(--theme-panel);border-radius:10px;display:grid;place-items:center}
+.c5-facility-sign svg{color:var(--theme-ink);width:25px;height:25px}
+.c5-facility-copy{min-width:0;flex:1}
+.c5-facility-copy h3{font-size:13px;margin:0;color:var(--theme-ink)}
+.c5-facility-copy p{font-size:10px;margin:7px 0 0;line-height:1.5}
+.c5-facility-copy small{display:block;color:var(--theme-muted);font-size:10px;line-height:1.5}
+.c5-stars{color:#c6a467;font-size:13px;letter-spacing:2px;margin:5px 0}
+.c5-facility button{font-size:11px;min-width:57px}
+.c5-plan-status{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--theme-soft);border-radius:12px;padding:12px;margin-bottom:12px}
+.c5-plan-status strong,.c5-plan-status small{display:block}.c5-plan-status strong{font-size:13px;color:var(--theme-ink)}
+.c5-plan-status small{font-size:11px;color:var(--theme-muted);margin-top:5px}
+.c5-plan-list{display:grid;gap:8px}
+.c5-plan-item{display:flex;align-items:center;gap:12px;border:1px solid var(--theme-line);border-radius:10px;padding:10px 12px;background:var(--theme-soft)}
+.c5-plan-item>div{min-width:0;flex:1}.c5-plan-item strong,.c5-plan-item small{display:block}
+.c5-plan-item strong{font-size:12px;color:var(--theme-ink)}.c5-plan-item small{margin-top:5px;font-size:10px;color:var(--theme-muted)}
+.c5-priority{flex:none;display:grid;place-items:center;background:var(--theme-panel);color:var(--theme-ink);border-radius:50%;width:29px;height:29px;font-weight:bold}
+.c5-plan-form{display:flex;align-items:end;gap:9px;flex-wrap:wrap;margin-top:13px}
+.c5-plan-form label{display:flex;flex-direction:column;gap:6px;min-width:140px;flex:1;color:var(--theme-muted);font-size:11px}
+.c5-plan-form select{border:1px solid var(--theme-line);border-radius:9px;background:var(--theme-soft);color:var(--theme-ink);padding:8px;min-height:39px;width:100%}
+.c5-plan-form button{min-height:39px}
+.c5-explain{font-size:11px;color:var(--theme-muted);margin-top:12px;line-height:1.7}
+@media(max-width:900px){.c5-facilities-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.camp-scene-head{padding:18px 16px 0}.camp-scene h2{font-size:20px}.camp-scene p{font-size:11px}
+  .camp-scene-stats{min-width:95px;padding:8px}.camp-scene-map{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:28px 14px 16px}
+  .camp-scene-marker{padding:9px 8px}.camp-scene-marker span{font-size:10px;white-space:normal}
+  .c5-plan-form label{min-width:0;flex-basis:38%}.c5-plan-form button{width:100%}}
+
+/* C4生产设施、种植和研习：使用已有UI元素，不用不存在的资产。 */
+.camp-c4{scroll-margin-top:28px}
+.c4-garden-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.c4-garden-bed{display:flex;align-items:center;gap:12px;background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:12px;padding:12px;min-width:0}
+.c4-garden-mark{display:grid;place-items:center;background:var(--theme-panel);border-radius:10px;width:42px;height:42px;flex:none}
+.c4-garden-mark svg{width:23px;height:23px;color:var(--theme-ink)}
+.c4-garden-bed>div:nth-child(2){flex:1;min-width:0}
+.c4-garden-bed strong,.c4-garden-bed small{display:block}
+.c4-garden-bed strong{font-size:13px;color:var(--theme-ink)}
+.c4-garden-bed small{font-size:10px;color:var(--theme-muted);line-height:1.6;margin-top:4px}
+.c4-note{font-size:11px;color:var(--theme-muted);line-height:1.7;margin:8px 0}
+.c4-process-grid,.c4-training-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.c4-process-card,.c4-training-card{border:1px solid var(--theme-line);background:var(--theme-soft);border-radius:12px;padding:12px;min-width:0}
+.c4-process-head{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.c4-process-head strong{font-size:13px;color:var(--theme-ink)}
+.c4-process-head span{font-size:11px;color:var(--theme-muted)}
+.c4-process-card p{font-size:11px;color:var(--theme-muted);min-height:32px;margin:10px 0}
+.c4-process-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.c4-process-actions span{font-size:10px;margin-right:auto;color:var(--theme-muted)}
+.c4-process-actions button,.c4-garden-bed button{font-size:11px}
+.c4-queue-status{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:9px;background:var(--theme-soft);font-size:12px;color:var(--theme-ink)}
+.c4-queue-status small{font-size:11px;color:var(--theme-muted)}
+.c4-inline-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.c4-inline-form label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--theme-muted);min-width:160px;flex:1}
+.c4-inline-form select{width:100%;min-height:41px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-soft);color:var(--theme-ink);padding:7px;font-size:12px}
+.c4-inline-form button{min-height:41px}
+.c4-training-card{display:flex;flex-direction:column;gap:8px}
+.c4-training-card strong{font-size:13px;color:var(--theme-ink)}
+.c4-training-card b{font-size:16px;color:var(--theme-ink)}
+.c4-training-card p{font-size:11px;color:var(--theme-muted);margin:0;min-height:36px}
+.c4-training-card small{font-size:10px;color:var(--theme-muted);min-height:35px;line-height:1.6;flex:1}
+@media(max-width:800px){.c4-process-grid,.c4-training-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.c4-garden-list,.c4-process-grid,.c4-training-grid{grid-template-columns:1fr}.c4-inline-form label{min-width:0;flex-basis:42%}.c4-inline-form button{width:100%}.c4-garden-bed button{min-width:66px}}
+
+
+/* C3永久装备制作清单与实物仓库：轻量文字卡，后续再替换独立原创装备立绘。 */
+.camp-equipment .gear-hint{font-size:11px;color:var(--theme-muted);line-height:1.7;margin:0 0 14px}
+.gear-crafting-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gear-recipe-card{background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:12px;padding:13px;min-width:0}
+.gear-recipe-card header{display:flex;gap:10px;align-items:center}
+.gear-icon{flex:none;display:grid;place-items:center;width:42px;height:42px;background:var(--theme-panel);color:var(--theme-ink);border:1px solid var(--theme-line);border-radius:11px}
+.gear-icon .icon{width:23px;height:23px}
+.gear-recipe-card header>div{display:flex;gap:5px;flex-direction:column;min-width:0}
+.gear-recipe-card strong,.gear-instance strong{font-size:13px;color:var(--theme-ink)}
+.gear-recipe-card small,.gear-instance small{font-size:10px;color:var(--theme-muted)}
+.gear-recipe-card p{min-height:28px;font-size:11px;color:var(--theme-muted);line-height:1.6;margin:10px 0}
+.gear-recipe-card footer{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.gear-recipe-card footer span{color:var(--theme-muted);font-size:11px}
+.gear-list-title{margin-top:18px!important}
+.gear-instance-list{display:grid;gap:9px}
+.gear-instance{display:flex;align-items:center;gap:10px;border:1px solid var(--theme-line);padding:10px;border-radius:11px;background:var(--theme-soft);min-width:0}
+.gear-instance-info{flex:1;min-width:0}
+.gear-instance-info strong,.gear-instance-info small{display:block}
+.gear-instance-info p{font-size:11px;margin:3px 0 0}
+.gear-assign{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gear-assign select{font-size:11px;border:1px solid var(--theme-line);background:var(--theme-panel);border-radius:8px;color:var(--theme-ink);padding:8px;max-width:170px}
+@media(max-width:720px){.gear-crafting-grid{grid-template-columns:1fr}.gear-instance{flex-wrap:wrap}.gear-assign{width:100%;padding-left:51px}.gear-assign select{max-width:none;flex:1}}
+
+.camp-dashboard{display:grid;gap:17px;padding-bottom:20px}
+.camp-overview{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;border:1px solid var(--theme-line);background:var(--theme-panel);padding:18px 20px;border-radius:18px}
+.camp-overview-title{display:flex;align-items:center;gap:14px}
+.camp-overview-title>.icon{width:34px;height:34px;color:var(--theme-ink)}
+.camp-overview strong,.camp-overview-title strong{font-size:17px;color:var(--theme-ink);display:block}
+.camp-overview small{font-size:11px;display:block;color:var(--theme-muted);margin-top:5px}
+.camp-tip{font-size:11px;color:var(--theme-muted);display:flex;align-items:center;gap:6px;padding:0 8px}
+.camp-tip .icon{height:16px;width:16px}
+.camp-section{background:var(--theme-panel);border:1px solid var(--theme-line);border-radius:16px;padding:16px 18px;min-width:0}
+.camp-section>.section-heading{margin:0 0 13px}
+.camp-section>.section-heading h2{font-size:16px}
+.camp-section p{color:var(--theme-muted);font-size:12px;line-height:1.7}
+.camp-assign-controls,.camp-loadout-fields{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:16px}
+.camp-assign-controls label,.camp-loadout-fields label{min-width:160px;flex:1;display:flex;flex-direction:column;gap:6px;color:var(--theme-muted);font-size:11px}
+.camp-assign-controls select,.camp-loadout-fields select{display:block;min-height:40px;width:100%;border:1px solid var(--theme-line);border-radius:9px;background:var(--theme-soft);color:var(--theme-ink);padding:8px;font-size:12px}
+.camp-assign-controls button,.camp-loadout-fields button{min-height:41px}
+.camp-job-grid{display:grid;gap:9px}
+.camp-job-card{border:1px solid var(--theme-line);background:var(--theme-soft);border-radius:12px;padding:10px;display:flex;align-items:center;gap:13px;min-width:0}
+.camp-job-card>.creature{width:70px;height:70px;object-fit:contain}
+.camp-job-detail{min-width:0;flex:1}
+.camp-job-detail h3{font-size:13px;color:var(--theme-ink)}
+.camp-job-detail p{font-size:11px;margin:3px 0}
+.camp-job-detail small{font-size:10px;color:var(--theme-muted)}
+.camp-progress{height:7px;background:var(--theme-panel);overflow:hidden;border-radius:8px;margin:7px 0}
+.camp-progress>i{display:block;height:100%;background:#79b881;border-radius:inherit}
+.camp-empty{text-align:center;padding:18px;font-size:12px;color:var(--theme-muted)}
+.camp-inventory{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.camp-resource{display:flex;align-items:center;justify-content:space-between;background:var(--theme-soft);border-radius:11px;padding:10px 12px;min-width:0}
+.camp-resource span{color:var(--theme-muted);font-size:11px}
+.camp-resource strong{color:var(--theme-ink);font-size:16px;font-variant-numeric:tabular-nums}
+.camp-recipe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.camp-recipe{border:1px solid var(--theme-line);border-radius:12px;padding:14px;min-width:0;background:var(--theme-soft);display:flex;flex-direction:column;gap:8px}
+.camp-recipe>header{display:flex;gap:9px;justify-content:space-between;align-items:center;color:var(--theme-ink)}
+.camp-recipe>header strong{font-size:13px}
+.camp-recipe>header span{background:var(--theme-panel);border-radius:25px;padding:4px 7px;font-size:10px}
+.camp-recipe p{margin:0;font-size:11px;min-height:36px}
+.camp-recipe>small{font-size:10px;line-height:1.6;color:var(--theme-muted);flex:1}
+.camp-recipe-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.camp-recipe-actions b{font-size:11px;color:var(--theme-ink)}
+.camp-recipe-actions button{font-size:11px}
+.camp-locked{opacity:.65}
+.camp-craft-active{border:1px solid rgba(135,187,125,.55);background:var(--theme-soft);border-radius:10px;padding:10px;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--theme-ink);margin-bottom:12px}
+.camp-craft-active .icon{width:17px;height:17px}
+.horde-supplies{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:9px;background:var(--theme-panel)}
+.horde-supplies button{border:1px solid var(--theme-line);background:var(--theme-soft);color:var(--theme-ink);padding:10px 12px;border-radius:10px;font-size:11px;display:flex;align-items:center;gap:8px;min-height:38px;cursor:pointer}
+.horde-supplies button:disabled{opacity:.48;cursor:not-allowed}
+.horde-supplies small{font-size:10px;color:var(--theme-muted)}
+@media(max-width:760px){.camp-recipe-grid{grid-template-columns:1fr}.camp-inventory{grid-template-columns:repeat(2,minmax(0,1fr))}.camp-section{padding:12px}.camp-assign-controls{gap:8px}.camp-assign-controls label{flex-basis:40%;min-width:0}.camp-assign-controls button{width:100%}.camp-overview{padding:12px}.camp-overview-title strong{font-size:14px}.camp-job-card>.creature{width:52px;height:52px}}

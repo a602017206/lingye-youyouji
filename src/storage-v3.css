@@ -1,0 +1,7 @@
+/* D1：出现标签页写入冲突时明显提示，暂停旧页以保护最新进度。 */
+.save-conflict-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 19px;margin:12px 19px 0;border:1px solid #d3a55c;border-radius:12px;background:#fff1d5;color:#785324;box-shadow:0 6px 16px rgba(100,78,27,.1)}
+.save-conflict-banner[hidden]{display:none}
+.save-conflict-banner span{display:flex;align-items:center;gap:9px;font-size:12px;line-height:1.6;flex:1}
+.save-conflict-banner span .icon{width:20px;height:20px;flex:none}
+.save-conflict-banner button{flex:none;white-space:nowrap}
+@media(max-width:680px){.save-conflict-banner{margin:8px;padding:12px;flex-direction:column;align-items:stretch}.save-conflict-banner button{width:100%}}

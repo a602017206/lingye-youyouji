@@ -1,0 +1,107 @@
+/* 原创群潮战场专用样式。保留现有DOM布局和六套区域主题。 */
+.horde-card{overflow:hidden}
+.horde-stage{height:470px!important;position:relative;overflow:hidden;border-radius:15px;background-position:center;background-size:cover;isolation:isolate}
+.horde-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+.horde-vignette{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(12,40,30,.38),transparent 27%,transparent 70%,rgba(12,42,32,.58))}
+.horde-top,.horde-bottom{position:absolute;z-index:3;left:16px;right:16px;display:flex;align-items:center;gap:12px;pointer-events:none}
+.horde-top{top:16px;justify-content:space-between;flex-wrap:wrap}
+.horde-bottom{bottom:15px;justify-content:center}
+.horde-pill,.horde-bottom>span{border:1px solid rgba(244,255,240,.26);background:rgba(14,51,38,.78);border-radius:99px;color:#fffaf0;padding:8px 13px;font-size:12px;display:flex;align-items:center;gap:6px;backdrop-filter:blur(9px)}
+.horde-pill>.icon{width:17px;height:17px}
+.horde-pill.danger{background:rgba(105,56,43,.84);letter-spacing:.04em}
+.horde-bottom>span b{font-variant-numeric:tabular-nums;color:#f2d88e}
+.horde-controls{padding:13px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--theme-panel)}
+.horde-controls>button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;font-size:12px;flex:1;white-space:nowrap}
+.horde-controls>.ultimate-button{min-width:170px}
+.horde-controls .icon{height:17px;width:17px}
+.horde-controls #horde-energy{font-size:10px;opacity:.8;white-space:nowrap}
+#horde-mode{min-width:95px;background:var(--theme-soft);color:var(--theme-ink);border:1px solid var(--theme-line);border-radius:9px;padding:8px 10px;cursor:pointer}
+.horde-canvas{touch-action:none;cursor:crosshair}
+.horde-metrics{display:flex;align-items:center;gap:18px;margin-top:14px;background:var(--theme-panel);border:1px solid var(--theme-line);border-radius:14px;padding:15px 18px}
+.horde-metrics>div{flex-shrink:0;min-width:55px}
+.horde-metrics small{font-size:10px;color:var(--theme-muted);display:block;margin-bottom:4px}
+.horde-metrics strong{font-size:14px;color:var(--theme-ink)}
+.horde-xp-track{height:9px;background:var(--theme-soft);border-radius:20px;flex:1 1 90px!important;overflow:hidden;min-width:30px}
+.horde-xp-track>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#67a872,#d0db78);transition:width .12s linear}
+.horde-metrics>div:last-child{flex:1 1 180px;min-width:0}
+#horde-build{font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.horde-skill-strip{display:flex;gap:10px;margin:12px 0}
+.horde-skill-strip>div{flex:1;display:flex;align-items:center;gap:8px;background:var(--theme-soft);border-radius:12px;padding:6px 10px;color:var(--theme-ink);font-size:11px}
+.horde-skill-strip img{width:39px;height:39px;object-fit:contain}
+.horde-explainer{padding:9px 14px;color:var(--theme-muted);background:var(--theme-panel);border-radius:10px;font-size:11px;line-height:1.9;margin-bottom:12px}
+.horde-upgrade-overlay,.horde-mid-message{position:absolute;z-index:5;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92%,640px);padding:20px;background:rgba(19,49,39,.94);border:1px solid #d2e6baaa;border-radius:18px;color:#fff9e8;box-shadow:0 17px 40px #08261777;text-align:center;backdrop-filter:blur(14px)}
+.horde-upgrade-overlay[hidden],.horde-mid-message[hidden]{display:none!important}
+.horde-upgrade-overlay h3,.horde-mid-message h2{font-size:20px;color:#f4e8b4;margin:0 0 6px}
+.horde-upgrade-overlay p,.horde-mid-message p{font-size:11px;line-height:1.65;color:#d7e3d5;margin:0 0 13px}
+.horde-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.horde-options button{padding:14px 10px;background:rgba(230,244,210,.13);border:1px solid #b4d2a088;border-radius:12px;color:#fff8e5;text-align:left;min-height:110px;cursor:pointer;display:flex;flex-direction:column;gap:7px}
+.horde-options button:hover,.horde-options button:focus-visible{background:rgba(215,242,159,.27);outline:2px solid #f1daa2}
+.horde-options button strong{font-size:13px}
+.horde-options button small{font-size:10px;line-height:1.6;color:#e2e7d6;flex:1}
+.horde-options button span{font-size:11px;color:#f5df92}
+.horde-options button em{font-style:normal;font-size:10px;opacity:.7}
+.horde-options .horde-rarity-uncommon{border-color:rgba(117,198,241,.75);background:rgba(48,104,137,.23)}
+.horde-options .horde-rarity-legendary{border-color:#e9bc69;background:rgba(179,110,33,.3);box-shadow:inset 0 0 15px rgba(239,185,89,.16)}
+.horde-boss-readout{position:absolute;top:62px;left:50%;transform:translateX(-50%);
+  z-index:4;max-width:calc(100% - 24px);width:340px;text-align:center;
+  background:rgba(31,43,45,.83);border:1px solid rgba(255,224,154,.6);
+  border-radius:12px;padding:8px 14px;backdrop-filter:blur(8px);color:#ffefc5;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px 10px;pointer-events:none}
+.horde-boss-readout[hidden]{display:none}
+.horde-boss-readout strong{font-size:14px}.horde-boss-readout span{font-size:11px;color:#ffcfa5}
+.horde-boss-readout small{flex:1 1 100%;font-size:10px;opacity:.9}
+.guardian-collection{margin:0 0 22px}
+.guardian-token-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.guardian-token{display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;
+  background:var(--theme-panel);border:1px solid var(--theme-line);min-width:0}
+.guardian-token.is-owned{border-color:rgba(174,149,78,.62);background:linear-gradient(120deg,rgba(225,191,105,.13),var(--theme-panel))}
+.guardian-token-emblem{height:44px;width:44px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;
+  background:var(--theme-soft);color:var(--theme-ink)}
+.guardian-token-emblem svg{width:25px;height:25px}
+.guardian-token.is-locked .guardian-token-emblem{filter:grayscale(1);opacity:.42}
+.guardian-token-text{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.guardian-token-text strong{font-size:12px;color:var(--theme-ink)}
+.guardian-token-text small{font-size:10px;line-height:1.55;color:var(--theme-muted)}
+.guardian-token-status{font-size:10px;color:var(--theme-muted);white-space:nowrap}
+.guardian-token.is-owned .guardian-token-status{color:var(--theme-ink)}
+@media(max-width:940px){.guardian-token-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.guardian-token-grid{grid-template-columns:1fr}
+  .guardian-token{padding:9px}.horde-boss-readout{top:50px;width:280px;padding:7px}
+  .horde-boss-readout strong{font-size:12px}.horde-boss-readout small{font-size:9px}}
+.horde-synergies{min-height:14px;margin-top:6px;padding:0 10px;color:var(--theme-ink);font-size:11px;letter-spacing:.035em}
+.rare-forms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;margin:14px 0 25px}
+.rare-forms-grid .dex-card{min-width:0}
+.rare-forms-grid .type-tag{white-space:normal;text-align:center}
+.element-rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:10px;margin:12px 0 25px}
+.element-rule-card{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--theme-line);background:var(--theme-panel);border-radius:12px}
+.element-rule-card strong{color:var(--theme-ink);font-size:13px}
+.element-rule-card span,.element-rule-card small{font-size:10px;line-height:1.6;color:var(--theme-muted)}
+@media(max-width:480px){.rare-forms-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+.horde-mid-message>.primary-button{margin-top:12px}
+@media(max-width:760px){
+  .horde-stage{height:390px!important}
+  .horde-top{left:10px;right:10px;top:10px;gap:6px}
+  .horde-pill,.horde-bottom>span{font-size:9px;padding:6px 9px}
+  .horde-bottom{left:8px;right:8px;bottom:9px;gap:5px}
+  .horde-controls{padding:10px;gap:6px}
+  .horde-controls>button{min-height:39px;padding:7px;font-size:9px}
+  .horde-controls>.ultimate-button{min-width:110px}
+  .horde-controls>#horde-mode{min-width:0;flex-basis:42%;font-size:9px}
+  .horde-metrics{gap:8px;padding:10px;flex-wrap:wrap}
+  .horde-metrics small{font-size:8px}
+  .horde-metrics strong{font-size:11px}
+  .horde-metrics>div:last-child{flex-basis:100%}
+  .horde-skill-strip{gap:5px}
+  .horde-skill-strip>div{padding:5px;font-size:8px;gap:2px}
+  .horde-skill-strip img{width:28px;height:28px}
+  .horde-explainer{font-size:10px}
+  .horde-upgrade-overlay{width:94%;padding:12px}
+  .horde-upgrade-overlay h3{font-size:15px}
+  .horde-upgrade-overlay p{font-size:9px}
+  .horde-options{gap:5px}
+  .horde-options button{padding:8px 6px;min-height:110px}
+  .horde-options button strong{font-size:10px}
+  .horde-options button small{font-size:8px}
+}
+@media(max-width:420px){.horde-stage{height:340px!important}.horde-pill{font-size:8px}.horde-bottom>span{font-size:8px}.horde-options button{min-height:130px}}
+@media(prefers-reduced-motion:reduce){.horde-xp-track>div{transition:none}}

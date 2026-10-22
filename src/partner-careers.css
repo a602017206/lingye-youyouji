@@ -1,0 +1,18 @@
+/* E4伙伴职业三路线：现有原创立绘和本地游戏规则的真实展示。 */
+.career-section>p{font-size:11px;color:var(--theme-muted);line-height:1.7;margin:7px 0 12px}
+.career-picker{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:12px;background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:12px}
+.career-picker label{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1;font-size:11px;color:var(--theme-muted)}
+.career-picker select{min-height:39px;border:1px solid var(--theme-line);border-radius:9px;padding:6px;background:var(--theme-panel);color:var(--theme-ink);width:100%}
+.career-partner{display:flex;align-items:center;gap:9px;flex:1;min-width:160px}
+.career-partner img{width:69px;height:72px;object-fit:contain;flex:none}
+.career-partner strong{font-size:13px;color:var(--theme-ink);display:block}
+.career-partner small{display:block;font-size:10px;color:var(--theme-muted);margin-top:6px}
+.career-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.career-path{border:1px solid var(--theme-line);border-radius:12px;padding:13px;background:var(--theme-soft);display:flex;flex-direction:column;gap:9px}
+.career-path.career-selected{border-color:#7fb28d;background:var(--theme-panel)}
+.career-path-head{display:flex;align-items:center;gap:9px;color:var(--theme-ink)}
+.career-path-head strong{font-size:12px}.career-path-head span{margin-left:auto;font-size:11px}
+.career-path p{font-size:11px;line-height:1.65;color:var(--theme-muted);margin:0;flex:1}
+.career-path small{font-size:10px;color:var(--theme-muted)}
+.career-path button{width:100%;min-height:36px}
+@media(max-width:700px){.career-paths{grid-template-columns:1fr}.career-picker label{min-width:100%}.career-path{gap:7px}}

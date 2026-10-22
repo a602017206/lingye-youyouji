@@ -1,0 +1,35 @@
+/* E1原创生态探索委托：使用现有真实伙伴原画与实测状态，不新增占位素材。 */
+.expedition-section{scroll-margin-top:25px}
+.expedition-intro,.expedition-help{color:var(--theme-muted);font-size:11px;line-height:1.7;margin:5px 0 14px}
+.expedition-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.expedition-feature{display:flex;align-items:center;gap:10px;background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:12px;padding:12px;min-width:0}
+.expedition-feature>span{display:grid;place-items:center;flex:none;width:35px;height:35px;border-radius:10px;background:var(--theme-panel);color:var(--theme-ink)}
+.expedition-feature strong{font-size:12px;white-space:nowrap;color:var(--theme-ink)}
+.expedition-feature small{font-size:10px;color:var(--theme-muted);line-height:1.5}
+.expedition-dispatch{display:flex;align-items:end;gap:9px;flex-wrap:wrap;border:1px solid var(--theme-line);background:var(--theme-soft);padding:13px;border-radius:13px}
+.expedition-dispatch label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--theme-muted);flex:1;min-width:135px}
+.expedition-dispatch select{width:100%;min-height:39px;background:var(--theme-panel);border:1px solid var(--theme-line);border-radius:9px;padding:7px;color:var(--theme-ink);font-size:12px}
+.expedition-dispatch button{min-height:39px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.expedition-active-heading,.expedition-journal-heading{margin-top:18px}
+.expedition-active-list{display:grid;gap:8px}
+.expedition-active-card{display:flex;gap:11px;align-items:center;border:1px solid var(--theme-line);background:var(--theme-soft);border-radius:13px;padding:10px}
+.expedition-partner-art{width:66px;height:66px;object-fit:contain;background:var(--theme-panel);border-radius:10px;flex:none}
+.expedition-job-main{flex:1;min-width:0}
+.expedition-job-title{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.expedition-job-title strong{color:var(--theme-ink);font-size:12px}
+.expedition-job-title span,.expedition-job-main small{color:var(--theme-muted);font-size:10px;line-height:1.5}
+.expedition-job-main small{display:block;margin:5px 0}
+.expedition-progress{height:7px;overflow:hidden;border-radius:8px;background:var(--theme-panel)}
+.expedition-progress i{height:100%;display:block;border-radius:8px;background:linear-gradient(90deg,#98c99b,#d6d891)}
+.expedition-job-buttons{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.expedition-job-buttons button{font-size:11px}
+.expedition-journal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.expedition-journal-item{display:flex;align-items:center;gap:9px;border:1px solid var(--theme-line);background:var(--theme-soft);padding:9px 10px;border-radius:10px}
+.expedition-journal-item>span{display:grid;place-items:center;width:31px;height:31px;border-radius:50%;background:var(--theme-panel);flex:none}
+.expedition-journal-item.found>span{color:#49875c}
+.expedition-journal-item strong{font-size:11px;color:var(--theme-ink);display:block}
+.expedition-journal-item small{font-size:10px;color:var(--theme-muted);display:block;margin-top:3px}
+.expedition-journal-item.locked{opacity:.58}
+@media(max-width:980px){.expedition-journal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.expedition-feature{flex-wrap:wrap}}
+@media(max-width:620px){.expedition-dispatch label{min-width:calc(50% - 7px)}.expedition-dispatch button{width:100%;justify-content:center}.expedition-active-card{flex-wrap:wrap}.expedition-job-buttons{width:100%}.expedition-job-buttons button{flex:1}.expedition-feature{align-items:start}.expedition-feature>span{width:30px;height:30px}.expedition-overview{gap:7px}.expedition-journal-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:380px){.expedition-overview,.expedition-journal-grid{grid-template-columns:1fr}.expedition-dispatch label{min-width:100%}}

@@ -1,0 +1,26 @@
+/* E3三节点探索事件链：复用正式生态背景与原始伙伴立绘。 */
+.route-section{scroll-margin-top:24px}
+.route-section>p{font-size:12px;line-height:1.7;color:var(--theme-muted)}
+.route-controls{display:flex;align-items:end;flex-wrap:wrap;gap:10px;background:var(--theme-soft);border:1px solid var(--theme-line);padding:13px;border-radius:12px}
+.route-controls label{flex:1;min-width:140px;display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--theme-muted)}
+.route-controls select{min-height:40px;max-width:100%;border:1px solid var(--theme-line);border-radius:9px;background:var(--theme-panel);padding:6px;color:var(--theme-ink)}
+.route-controls>button{min-height:40px}
+.route-active{display:flex;align-items:center;gap:14px;background:linear-gradient(110deg,rgba(17,47,36,.91),rgba(44,87,64,.8)),url('/lingye-youyouji/assets/regions/forest.webp') center/cover;border-radius:13px;padding:15px;color:#f7f4e9;margin:12px 0}
+.route-active img{width:78px;height:84px;object-fit:contain;filter:drop-shadow(0 4px 4px #152b2a)}
+.route-active strong{color:#f9f3df;font-size:14px}
+.route-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:13px 0}
+.route-steps span{text-align:center;border:1px solid var(--theme-line);border-radius:10px;padding:9px 5px;font-size:11px;background:var(--theme-soft);color:var(--theme-muted)}
+.route-steps span.current{background:var(--theme-ink);color:var(--theme-panel)}
+.route-steps span.complete{border-color:#83b992;color:var(--theme-ink)}
+.route-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0}
+.route-choices button{background:var(--theme-soft);border:1px solid var(--theme-line);border-radius:11px;color:var(--theme-ink);cursor:pointer;text-align:left;min-height:94px;padding:11px;display:flex;flex-direction:column;gap:8px}
+.route-choices button:hover:not(:disabled){border-color:#79ab91}
+.route-choices button:disabled{opacity:.48;cursor:default}
+.route-choices button strong{font-size:12px}.route-choices button small{color:var(--theme-muted);font-size:10px;line-height:1.5}
+.route-collection{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.route-collection>div{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:10px;border:1px solid var(--theme-line);border-radius:10px;background:var(--theme-soft);opacity:.7;min-width:0}
+.route-collection>div.found{opacity:1;border-color:#7bb58a}
+.route-collection strong{font-size:11px;color:var(--theme-ink)}.route-collection small{flex-basis:100%;font-size:10px;color:var(--theme-muted)}
+.route-section h3{color:var(--theme-ink);font-size:14px}
+@media(max-width:620px){.route-choices{grid-template-columns:1fr}.route-choices button{min-height:65px}.route-collection{grid-template-columns:repeat(2,minmax(0,1fr))}.route-controls>button{width:100%}}
+@media(max-width:340px){.route-collection,.route-steps{grid-template-columns:1fr}.route-controls label{min-width:100%}}

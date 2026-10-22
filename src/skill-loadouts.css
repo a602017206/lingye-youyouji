@@ -1,0 +1,25 @@
+/* E2-B主动技能与双槽铭文，复用已有原创伙伴PNG；移动端不溢出。 */
+.skill-slots-intro{font-size:11px;line-height:1.7;color:var(--theme-muted);margin:8px 0 13px}
+.skill-auto-row{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--theme-line);padding:11px 13px;border-radius:12px;background:var(--theme-soft)}
+.skill-auto-row strong,.skill-auto-row small{display:block}.skill-auto-row strong{font-size:12px;color:var(--theme-ink)}.skill-auto-row small{margin-top:4px;font-size:10px;color:var(--theme-muted)}
+.skill-loadouts-grid{display:grid;grid-template-columns:1fr;gap:11px;margin-top:12px}
+.skill-loadout-card{border:1px solid var(--theme-line);background:var(--theme-soft);border-radius:13px;padding:12px;min-width:0}
+.skill-loadout-card header{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+.skill-loadout-card header img{width:51px;height:56px;object-fit:contain}
+.skill-loadout-card header strong{font-size:12px;color:var(--theme-ink);display:block}
+.skill-loadout-card header small{font-size:10px;color:var(--theme-muted)}
+.skill-setup-status{margin-left:auto;font-size:10px;color:var(--theme-muted)}
+.skill-slot-group{display:flex;align-items:start;gap:9px;margin-top:9px}
+.skill-slot-group>strong{flex:0 0 75px;font-size:11px;color:var(--theme-ink);padding-top:9px}
+.skill-slot-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;flex:1;min-width:0}
+.skill-slot-choice{display:flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:5px;text-align:left;min-height:60px;padding:7px;background:var(--theme-panel);border:1px solid var(--theme-line);border-radius:9px;color:var(--theme-ink);cursor:pointer}
+.skill-slot-choice.selected{border-color:#6fa67c;outline:1px solid #6fa67c}
+.skill-slot-choice .icon{width:17px;height:17px;flex:none}
+.skill-slot-choice strong{font-size:10px;white-space:nowrap}
+.skill-slot-choice small{flex-basis:100%;font-size:9px;line-height:1.4;color:var(--theme-muted);text-align:center}
+.skill-slot-choice:focus-visible{outline:2px solid var(--theme-ink);outline-offset:2px}
+.horde-active-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px 0}
+.horde-active-actions button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:54px;border-radius:10px;font-size:11px}
+.horde-active-actions button small{font-size:9px;opacity:.85}
+@media(max-width:720px){.skill-slot-group{flex-direction:column}.skill-slot-group>strong{flex-basis:auto;padding:0}.skill-slot-options{width:100%}}
+@media(max-width:450px){.skill-slot-options{grid-template-columns:repeat(2,minmax(0,1fr))}.skill-auto-row{align-items:stretch;flex-direction:column}.horde-active-actions button{font-size:10px;min-height:48px}}

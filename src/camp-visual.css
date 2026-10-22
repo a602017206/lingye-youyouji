@@ -1,0 +1,43 @@
+
+/* D2工作伙伴实景：采用项目原有原创PNG与原创林地场景，动态呈现真实采集及制作进度。 */
+.camp-work-stage{position:relative;overflow:hidden;min-width:0;border-radius:17px;border:1px solid #60836f78;padding:19px 20px;
+  background:linear-gradient(120deg,rgba(25,52,43,.91),rgba(27,57,45,.80) 58%,rgba(35,64,48,.63)),url('/lingye-youyouji/assets/regions/forest.webp') center/cover no-repeat;color:#fff8e5}
+.camp-stage-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.camp-stage-eyebrow{font-size:10px;color:#bedcae;letter-spacing:2px}
+.camp-stage-heading h2{color:#fff8e5;margin:5px 0;font-size:18px}
+.camp-stage-count{font-size:11px;border:1px solid #ffffff60;border-radius:20px;padding:6px 10px;background:#172d2566;white-space:nowrap}
+.camp-worker-actors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.camp-worker-actor{display:flex;align-items:center;min-width:0;gap:10px;padding:10px;background:#123628b8;border:1px solid #c4e4a947;border-radius:13px;box-shadow:inset 0 1px #ffffff17}
+.camp-actor-art{position:relative;width:80px;height:77px;flex:none;display:flex;align-items:end;justify-content:center;
+  background:radial-gradient(ellipse at 50% 90%,#b5bf7b85 0%,#6b996455 33%,transparent 72%)}
+.camp-actor-art:after{content:'';position:absolute;width:54px;height:9px;bottom:0;border-radius:50%;background:#102d27bb;filter:blur(3px)}
+.camp-actor-art img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;object-position:bottom;animation:camp-working 2.8s ease-in-out infinite;animation-delay:calc(var(--worker-order,0)*-.48s);filter:drop-shadow(0 3px 4px #14281eaa)}
+.camp-actor-info{min-width:0;flex:1}.camp-actor-info strong{display:block;font-size:12px;color:#fff9e9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.camp-actor-info span{display:block;font-size:11px;color:#cfe9c6;margin:5px 0 7px}
+.camp-actor-info small{font-size:10px;color:#c4d9b8}
+.camp-actor-progress{height:6px;width:100%;background:#09271d;border-radius:20px;overflow:hidden;margin-bottom:4px}
+.camp-actor-progress i{height:100%;display:block;border-radius:20px;background:linear-gradient(90deg,#98bf81,#e0e99f);transition:width .5s}
+.camp-worker-stage-empty{grid-column:1/-1;text-align:center;color:#d7e8cb;font-size:12px;padding:20px}
+.camp-craft-status{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;border-top:1px solid #f4ffe02b;padding-top:12px}
+.camp-craft-chip{display:flex;flex:1;flex-wrap:wrap;align-items:center;gap:8px;font-size:11px;min-width:0}
+.camp-craft-chip strong{font-size:11px;color:#fff4d1}
+.camp-craft-chip span{color:#cfdfc4}.camp-craft-chip .camp-actor-progress{width:100%;max-width:240px;margin:0}
+.camp-craft-idle{font-size:11px;color:#cfe0c5}
+.camp-stage-link{font-size:11px;color:#fff3ce;text-decoration:none;padding:5px 9px;border:1px solid #fff7cf63;border-radius:8px;white-space:nowrap}
+.camp-stage-link:hover{background:#ffffff20}
+.camp-inventory-tools{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 14px}
+.camp-inventory-filter{font-size:11px;border:1px solid var(--theme-line);border-radius:20px;padding:6px 12px;background:var(--theme-soft);color:var(--theme-muted);cursor:pointer}
+.camp-inventory-filter.active{background:var(--theme-ink);border-color:var(--theme-ink);color:var(--theme-panel)}
+.camp-inventory-filter:focus-visible{outline:2px solid var(--theme-ink);outline-offset:2px}
+@keyframes camp-working{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+@media(max-width:1020px){.camp-worker-actors{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.camp-work-stage{padding:14px}.camp-worker-actors{grid-template-columns:1fr 1fr;gap:7px}
+ .camp-worker-actor{flex-direction:column;align-items:center;text-align:center;padding:7px;gap:4px}
+ .camp-actor-art{width:85px;height:85px}.camp-actor-info{width:100%}
+ .camp-actor-info strong,.camp-actor-info span{font-size:10px}.camp-craft-status{flex-wrap:wrap}
+ .camp-stage-link{margin-left:auto}.camp-stage-count{font-size:10px}
+}
+@media(max-width:355px){.camp-worker-actors{grid-template-columns:1fr}.camp-worker-actor{flex-direction:row;text-align:left}}
+@media(prefers-reduced-motion:reduce){.camp-actor-art img{animation:none}.camp-actor-progress i{transition:none}}
+body.reduced-motion .camp-actor-art img{animation:none}
+body.reduced-motion .camp-actor-progress i{transition:none}
