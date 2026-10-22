@@ -77,11 +77,11 @@ function spawn(h,s,boss=false) {
   // 异彩灵伴拥有独立真实PNG与编号，每次刷新约6%概率显现。
   const species=boss?region.boss:(rare&&rand(h)<.06?rare:common[Math.floor(rand(h)*common.length)]);
   const power=1+Math.min(h.elapsed,180)/210 + s.depths[s.region]*.19;
-  const hp=(boss?900:kind==='tank'?155:kind==='runner'?44:82)*power*(1+h.region*.38)*enemyVitalityMultiplier(h,s);
+  const hp=(boss?900:kind==='tank'?155:kind==='runner'?44:82)*power*(1+h.region*.38)*enemyVitalityMultiplier(h,s)*(h.training?.22:1);
   const enemy={id:h.nextId++,species,kind,x:boss?HORDE_WIDTH/2:coords[0],
     y:boss?-65:coords[1],hp,maxHp:hp,r:boss?36:kind==='tank'?20:kind==='runner'?12:16,
     speed:boss?30:kind==='tank'?32:kind==='runner'?100:55,
-    attack:boss?34:kind==='tank'?13:kind==='runner'?8:9,hitCooldown:0,slow:0,flash:0,
+    attack:h.training?1:boss?34:kind==='tank'?13:kind==='runner'?8:9,hitCooldown:0,slow:0,flash:0,
     abilityClock:boss?2.5:0,shield:0,phase:boss?1:0};
   h.enemies.push(enemy);
   return enemy;
@@ -353,10 +353,10 @@ export function stepHorde(h,s,dt=1/30){
     if(dot>0){const applied=Math.min(e.hp,dot*dt);e.hp-=applied;h.combatDamage+=applied;}
     e.burn=Math.max(0,(e.burn??0)-dt);e.spore=Math.max(0,(e.spore??0)-dt);
   }
-  if(!h.bossStarted && h.elapsed>=100){h.bossStarted=true;spawn(h,s,true);h.bossPhase=1;h.bossMechanic=BOSS_STYLES[h.region].kind;h.notice='boss';}
+  if(!h.training&&!h.bossStarted && h.elapsed>=100){h.bossStarted=true;spawn(h,s,true);h.bossPhase=1;h.bossMechanic=BOSS_STYLES[h.region].kind;h.notice='boss';}
   h.eliteClock+=dt;
-  if(!h.bossStarted&&h.elapsed>=24&&h.eliteClock>=29){h.eliteClock=0;spawnElite(h,s);}
-  const cap=h.bossStarted?22:Math.min(52,Math.floor(9+h.elapsed*.30));
+  if(!h.training&&!h.bossStarted&&h.elapsed>=24&&h.eliteClock>=29){h.eliteClock=0;spawnElite(h,s);}
+  const cap=h.training?6:h.bossStarted?22:Math.min(52,Math.floor(9+h.elapsed*.30));
   h.spawnClock-=dt;
   if(h.spawnClock<=0&&h.enemies.length<cap){
     spawn(h,s);

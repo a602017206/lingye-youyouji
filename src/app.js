@@ -10,7 +10,7 @@ import {claimDexResearch} from './dex-research.js';
 import { createHorde, stepHorde, serializeHorde, chooseHordeUpgrade, triggerHordePulse, captureHordeTarget, setHordeDirection, useHordeSupply, returnUnusedSupplies,castHordeActive } from './horde.js';
 import { renderHordeCanvas } from './horde-render.js';
 import {setChallengeTier} from './horde-challenge.js';
-import {createTrainingArena,trainingAction,trainingArenaMarkup} from './training-arena.js';
+import {createTrainingArena,trainingAction,trainingArenaMarkup,stepTrainingArena} from './training-arena.js';
 import { hordePageMarkup, updateHordePanels } from './horde-view.js';
 import { ensureCamp,settleCamp,assignCampJob,removeCampJob,startCraft,upgradeCamp,selectCampLoadout,setCampPaused } from './camp-engine.js';
 import { campView } from './camp-view.js';
@@ -285,7 +285,37 @@ function handleAction(action) {
   refresh();
 }
 document.addEventListener('click', event => {
-  if(event.target.closest('[data-training-open]')){const arena=createTrainingArena(),root=document.createElement('div');root.id='standalone-training';root.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);overflow:auto;padding:5vh max(5vw,15px)';root.innerHTML=trainingArenaMarkup(arena);root.addEventListener('click',e=>{if(e.target.closest('[data-training-close]')){root.remove();return;}const action=e.target.closest('[data-training-action]')?.dataset.trainingAction;if(action&&trainingAction(arena,action))root.innerHTML=trainingArenaMarkup(arena);});document.body.append(root);return;}
+  if(event.target.closest('[data-training-open]')){
+    const arena=createTrainingArena(),root=document.createElement('div');
+    root.id='standalone-training';root.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);overflow:auto;padding:3vh max(3vw,12px)';
+    const draw=()=>{root.innerHTML=trainingArenaMarkup(arena);renderHordeCanvas(root.querySelector('#training-canvas'),arena.horde,arena.state);};
+    const keys=new Set();
+    const direction=()=>{const x=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||keys.has('KeyA')),y=Number(keys.has('ArrowDown')||keys.has('KeyS'))-Number(keys.has('ArrowUp')||keys.has('KeyW'));trainingAction(arena,x||y?'move':'stop',{x,y});};
+    const keydown=e=>{if(e.key==='Escape'){close();return;}if(['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','KeyW','KeyA','KeyS','KeyD'].includes(e.code)){e.preventDefault();keys.add(e.code);direction();}};
+    const keyup=e=>{keys.delete(e.code);direction();};
+    const close=()=>{root.remove();window.removeEventListener('keydown',keydown,true);window.removeEventListener('keyup',keyup,true);};
+    root.addEventListener('click',e=>{
+      if(e.target.closest('[data-training-close]')){close();return;}
+      if(e.target.closest('[data-training-restart]'))trainingAction(arena,'restart');
+      if(e.target.closest('[data-training-skip]'))trainingAction(arena,'skip');
+      if(e.target.closest('[data-training-skill]'))trainingAction(arena,'skill');
+      const upgrade=e.target.closest('[data-training-upgrade]')?.dataset.trainingUpgrade;
+      if(upgrade)trainingAction(arena,'upgrade',upgrade);
+      draw();
+    });
+    const point=e=>{const canvas=root.querySelector('#training-canvas');if(e.target!==canvas)return;const rect=canvas.getBoundingClientRect();trainingAction(arena,'move',{x:(e.clientX-rect.left)/rect.width*960-arena.horde.hero.x,y:(e.clientY-rect.top)/rect.height*540-arena.horde.hero.y});};
+    root.addEventListener('pointerdown',e=>{if(e.target.id==='training-canvas'){e.target.setPointerCapture?.(e.pointerId);point(e);}});
+    root.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')point(e);});
+    root.addEventListener('pointerup',()=>trainingAction(arena,'stop'));root.addEventListener('pointercancel',()=>trainingAction(arena,'stop'));
+    window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);
+    document.body.append(root);draw();
+    let last=performance.now(),accum=0;
+    const frame=now=>{if(!root.isConnected)return;accum=Math.min(.1,accum+(now-last)/1000);last=now;let changed=false;
+      while(accum>=1/30){const before=arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed;stepTrainingArena(arena);accum-=1/30;if(before!==arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed)changed=true;}
+      if(changed)draw();else renderHordeCanvas(root.querySelector('#training-canvas'),arena.horde,arena.state);
+      requestAnimationFrame(frame);
+    };requestAnimationFrame(frame);return;
+  }
   if(event.target.matches('.dex-stage-overlay')){dismissDexStage();return;}
   const button = event.target.closest('button, a.brand');
   if (!button || button.disabled) return;
@@ -491,7 +521,7 @@ function runHordeFrame(now) {
     hordeAccum = Math.min(100, hordeAccum + passed);
     for (let n = 0; hordeAccum >= 1000 / 30 && n < 3; n++) {
       const beforePacks = horde.packs, beforeFinished = horde.finished;
-      stepHorde(horde, state, 1 / 30); hordeAccum -= 1000 / 30;
+      if(!document.querySelector('#standalone-training'))stepHorde(horde, state, 1 / 30); hordeAccum -= 1000 / 30;
       if (horde.packs !== beforePacks || (!beforeFinished && horde.finished)) persist();
     }
     if (page === 'adventure') renderHordeCanvas($('#horde-canvas'), horde, state);
