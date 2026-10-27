@@ -3,6 +3,11 @@ import { teamMembers } from './engine.js';
 import { sprite, SPECIES } from './data.js';
 import { HORDE_WIDTH, HORDE_HEIGHT } from './horde.js';
 import {skillVisual} from './family-skill-vfx.js';
+import {creatureMotion} from './creature-animation.js';
+import {drawLayeredCreature,resolveLayerAction,animationPolicy} from './creature-layer-animation.js';
+import {creatureAttackPose,creatureAttackStyle} from './creature-combat-vfx.js';
+import {creatureActionAt,evolutionActionScale,visibleCreatureHits} from './creature-action-state.js';
+import {ACTION_SEQUENCES} from './creature-action-sequences.js';
 
 const cache = new Map();
 const elementColors={grove:'#9be7a0',ember:'#f2aa77',tide:'#83cfee',frost:'#caeafa',spore:'#c7a0d9',aether:'#edcd87',
@@ -17,14 +22,24 @@ function picture(id){
   }
   const entry=cache.get(id);return entry.loaded?entry.img:null;
 }
-function actor(ctx,id,x,y,size,ally=false,flash=false) {
+function actor(ctx,id,x,y,size,ally=false,flash=false,time=0,seed=0,moving=false,reduced=false,attacking=false,action=null,mobile=false,hurtPhase) {
   ctx.save();
   ctx.globalAlpha=ally?1:.92;
   ctx.fillStyle=ally?'rgba(35,98,63,.25)':'rgba(28,50,49,.16)';
-  ctx.beginPath();ctx.ellipse(x,y+size*.24,size*.29,size*.105,0,0,Math.PI*2);ctx.fill();
+  const groundOffset=ally&&ACTION_SEQUENCES[id]?472/512-.65:.24;
+  ctx.beginPath();ctx.ellipse(x,y+size*groundOffset,size*.29,size*.105,0,0,Math.PI*2);ctx.fill();
   const img=picture(id);
-  if(img)ctx.drawImage(img,x-size/2,y-size*.65,size,size);
-  else if(!sprite(id)){ctx.fillStyle='#f3eedc';ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.fillText(SPECIES[id]?.name??'未绘制',x,y-size*.1,Math.max(40,size*1.5));}
+  const layered=ally&&drawLayeredCreature(ctx,id,{x,y:y-size*.15,size,time,action:resolveLayerAction({action,moving,hurt:flash,hurtPhase}),reduced,mobile});
+  if(!layered&&img){
+    const motion=creatureMotion(id,time,{moving,hurt:flash,reduced,attacking,seed});
+    const phase=action?.state==='windup' ? .15*action.progress : action?.state==='strike' ? .15+.55*action.progress : action?.state==='recover' ? .7+.3*action.progress : 0;
+    const strike=action&&action.state!=='idle'?creatureAttackPose(id,phase,reduced):creatureAttackPose(id,0,true);
+    const stageScale=action&&action.state!=='idle'?evolutionActionScale(id):1;
+    ctx.save();ctx.translate(x+motion.x+strike.x*stageScale,y-size*.15+motion.y+strike.y*stageScale);ctx.rotate(motion.rotation+strike.rotation*stageScale);ctx.scale(motion.sx*(1+(strike.sx-1)*stageScale),motion.sy*(1+(strike.sy-1)*stageScale));
+    ctx.drawImage(img,-size/2,-size*.5,size,size);
+    ctx.restore();
+  }
+  else if(!layered&&!sprite(id)){ctx.fillStyle='#f3eedc';ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.fillText(SPECIES[id]?.name??'未绘制',x,y-size*.1,Math.max(40,size*1.5));}
   if(flash){ctx.strokeStyle='rgba(255,250,208,.88)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-5,size*.33,0,Math.PI*2);ctx.stroke();}
   ctx.restore();
 }
@@ -96,7 +111,9 @@ function drawWarning(ctx,mark){
 }
 export function renderHordeCanvas(canvas,h,s) {
   if(!canvas)return;
-  const dpr=Math.min(2,typeof devicePixelRatio!=='undefined'?devicePixelRatio:1);
+  const mobile=typeof matchMedia!=='undefined'&&matchMedia('(max-width: 600px)').matches;
+  const policy=animationPolicy({mobile,dpr:typeof devicePixelRatio!=='undefined'?devicePixelRatio:1});
+  const dpr=policy.dpr;
   const box=canvas.getBoundingClientRect();
   if(box.width<1||box.height<1)return;
   const w=Math.round(box.width*dpr),he=Math.round(box.height*dpr);
@@ -108,10 +125,11 @@ export function renderHordeCanvas(canvas,h,s) {
   ambient.addColorStop(0,'rgba(255,251,215,.13)');ambient.addColorStop(1,'rgba(13,43,31,.16)');
   ctx.fillStyle=ambient;ctx.fillRect(0,0,HORDE_WIDTH,HORDE_HEIGHT);
   // 危险的敌群按Y值由远到近排序绘制，不把敌人合成一张虚假贴片。
+  const reduced=!!s.settings?.reducedMotion||(typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
   const enemies=[...h.enemies].sort((a,b)=>a.y-b.y);
   for(const e of enemies){
     const size=e.kind==='boss'?112:e.kind==='elite'?77:e.kind==='tank'?56:e.kind==='runner'?37:45;
-    actor(ctx,e.species,e.x,e.y,size,false,e.flash>0);
+    actor(ctx,e.species,e.x,e.y,size,false,e.flash>0,h.elapsed,(e.x*.013+e.y*.019),true,reduced,e.attackTimer>0);
     if(SPECIES[e.species]?.rareVariantOf){
       ctx.strokeStyle='rgba(255,209,112,.94)';ctx.lineWidth=3;
       ctx.beginPath();ctx.arc(e.x,e.y-8,size*.38,0,Math.PI*2);ctx.stroke();
@@ -145,16 +163,67 @@ export function renderHordeCanvas(canvas,h,s) {
     ctx.restore();
   }
   for(const p of h.pulses)drawPulse(ctx,p);
+  // 技能施放时按伙伴主属性加一层轻量短促印记，画面外不创建粒子对象。
+  if(!reduced&&h.pulses?.length){
+    const members=teamMembers(s);
+    for(let i=0;i<Math.min(members.length,3);i++){
+      const p=members[i],style=creatureAttackStyle(p.species),pulse=h.pulses.find(v=>v.life>0&&v.max>0);
+      if(!pulse)break;
+      const power=Math.max(0,Math.min(1,pulse.life/pulse.max));
+      const x=h.hero.x+[-34,34,0][i],y=h.hero.y+[18,18,-28][i]-12;
+      ctx.save();ctx.translate(x,y);ctx.globalAlpha=power*.65;
+      ctx.strokeStyle=elementColors[style.type]??'#b9edca';ctx.lineWidth=2.5;
+      ctx.rotate(h.elapsed*(style.shape==='stars'?2:-1)+i);
+      const radius=style.range*(1-power*.35);
+      ctx.beginPath();
+      if(style.shape==='sparks'||style.shape==='stars'||style.shape==='crystal'){
+        for(let n=0;n<4;n++){const a=n*Math.PI/2;ctx.moveTo(Math.cos(a)*radius*.58,Math.sin(a)*radius*.58);ctx.lineTo(Math.cos(a)*radius,Math.sin(a)*radius);}
+      }else if(style.shape==='slash'||style.shape==='gust'){
+        ctx.arc(0,0,radius,-1.2,.55);
+      }else{
+        ctx.arc(0,0,radius,0,Math.PI*2);
+      }
+      ctx.stroke();ctx.restore();
+    }
+  }
+  // 命中特效与伤害结算解耦：每个命中事件只保留0.32秒，按真实伤害归属的伙伴属性及进化阶段显示。
+  if(!reduced){
+    const ownerSpecies=new Map(teamMembers(s).map(p=>[p.id,p.species]));
+    for(const impact of visibleCreatureHits(h)){
+      const species=ownerSpecies.get(impact.ownerId);
+      if(!species)continue;
+      const appearance=creatureAttackStyle(species);
+      const stage=evolutionActionScale(species);
+      const age=h.elapsed-impact.start,progress=Math.max(0,Math.min(1,age/.32));
+      const radius=(7+appearance.range*.55*progress)*stage;
+      ctx.save();ctx.translate(impact.x,impact.y);ctx.globalAlpha=(1-progress)*.86;
+      ctx.strokeStyle=elementColors[appearance.type]??'#e9ffd7';ctx.lineWidth=2.3;
+      ctx.beginPath();
+      if(appearance.shape==='sparks'||appearance.shape==='stars'||appearance.shape==='crystal'){
+        const rays=appearance.shape==='stars'?6:4;
+        for(let n=0;n<rays;n++){const angle=n*Math.PI*2/rays+h.elapsed;ctx.moveTo(Math.cos(angle)*radius*.5,Math.sin(angle)*radius*.5);ctx.lineTo(Math.cos(angle)*radius,Math.sin(angle)*radius);}
+      }else if(appearance.shape==='slash'||appearance.shape==='gust'){
+        ctx.rotate(-.45);ctx.arc(0,0,radius,-1.45,.85);
+      }else{
+        ctx.arc(0,0,radius,0,Math.PI*2);
+        if(stage>1.3){ctx.moveTo(radius*.48,0);ctx.arc(0,0,radius*.48,0,Math.PI*2);}
+      }
+      ctx.stroke();ctx.restore();
+    }
+  }
   for(const item of h.combatTexts??[]){const fraction=Math.max(0,item.life/item.max);ctx.save();ctx.globalAlpha=fraction;ctx.textAlign='center';ctx.font=item.kind==='skill'?'bold 18px sans-serif':'bold 14px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='rgba(20,30,40,.78)';ctx.fillStyle=item.kind==='skill'?'#ffe49b':'#ffffff';const y=item.y-(1-fraction)*25;ctx.strokeText(item.label,item.x,y);ctx.fillText(item.label,item.x,y);ctx.restore();}
   for(const marker of h.dangerMarkers??[])drawWarning(ctx,marker);
   const team=teamMembers(s);
   const poses=[[-34,18],[34,18],[0,-28]];
-  team.forEach((p,i)=>{
-    const x=h.hero.x+poses[i][0],y=h.hero.y+poses[i][1]+Math.sin(h.elapsed*4+i)*3;
+  team.slice(0,policy.maxActors).forEach((p,i)=>{
+    // 真正的步态及受伤/施法姿态使用固定地面，避免又被编队层的正弦起伏抬离地面。
+    const grounded=!!ACTION_SEQUENCES[p.species];
+    const x=h.hero.x+poses[i][0],y=h.hero.y+poses[i][1]+(reduced||grounded?0:Math.sin(h.elapsed*4+i)*3);
     ctx.save();ctx.shadowColor='#e9ffb5';ctx.shadowBlur=22;
     ctx.strokeStyle=i===0?'#c6f3b0':i===1?'#ffe5ac':'#bdddfb';ctx.lineWidth=4;
     ctx.beginPath();ctx.ellipse(x,y+14,25,10,0,0,Math.PI*2);ctx.stroke();ctx.restore();
-    actor(ctx,p.species,x,y,71,true);
+    // 1表示模拟本帧实际位移；小于1的衰减段只保留战斗动量，停步后不继续踏步。
+    actor(ctx,p.species,x,y,71,true,h.impact>0,h.elapsed,i,h.motionTime===1,reduced,false,creatureActionAt(h,p.id),mobile,1-(h.impact??0)/.25);
   });
   ctx.save();
   ctx.strokeStyle=h.impact>0?'rgba(255,130,110,.86)':'rgba(240,248,205,.42)';

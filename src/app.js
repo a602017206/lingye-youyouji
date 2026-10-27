@@ -4,7 +4,9 @@ import { t, creatureName } from './i18n.js';
 import { readSave, writeSaveDetailed } from './storage.js';
 import { THEMES, applyTheme } from './theme.js';
 import { secondaryView, ecologyView } from './views.js';
-import {closeDexStage} from './dex-stage.js';
+import {closeDexStage,openDexStage} from './dex-stage.js';
+import {openDexAnimation,closeDexAnimation,selectDexAnimationAction} from './dex-animation-preview.js';
+import {LAYER_ACTIONS} from './creature-layer-animation.js';
 import {stageEvolutionLine} from './dex-stage-theme.js';
 import {claimDexResearch} from './dex-research.js';
 import { createHorde, stepHorde, serializeHorde, chooseHordeUpgrade, triggerHordePulse, captureHordeTarget, setHordeDirection, useHordeSupply, returnUnusedSupplies,castHordeActive } from './horde.js';
@@ -175,8 +177,19 @@ function renderSecondary() {
   window.scrollTo(position);
 }
 function dismissDexStage(){
-  closeDexStage();
+  closeDexStage();closeDexAnimation();
   document.querySelectorAll('.dex-stage-overlay').forEach(root=>root.remove());
+}
+function renderDexPreview(root){
+  closeDexStage();closeDexAnimation();
+  const host=root.querySelector('.dex-stage-canvas'),id=Number(root.dataset.species),mode=root.dataset.mode;
+  host.replaceChildren();delete host.dataset.art;delete host.dataset.error;
+  root.querySelector('.dex-animation-actions').hidden=mode!=='animation';
+  root.querySelector('.dex-animation-status').hidden=mode!=='animation';
+  root.querySelector('[data-dex-hint]').textContent=tr(mode==='animation'?'dexAnimationHint':'dexStageHint');
+  root.querySelectorAll('[data-dex-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.dexMode===mode)));
+  if(mode==='portrait'){openDexStage(id,host);return;}
+  openDexAnimation(id,host,{action:root.dataset.action,reduced:!!state.settings.reducedMotion,label:name(id),onStatus:status=>{root.querySelector('.dex-animation-status').textContent=tr('dexArt'+status);}});
 }
 function navigatePage(nextPage){
   dismissDexStage();page=nextPage;shell();
@@ -325,13 +338,15 @@ document.addEventListener('click', event => {
   if(button.dataset.dexStage){
     dismissDexStage();
     const id=Number(button.dataset.dexStage);
-    const root=document.createElement('div');root.className='dex-stage-overlay';
-    root.innerHTML=`<section class="dex-stage-dialog" role="dialog" aria-modal="true" aria-label="${tr('dexStageTitle')}" tabindex="-1"><button class="secondary-button" data-close-dex-stage>${tr('dexStageClose')}</button><div class="dex-stage-canvas"></div><div class="dex-stage-forms">${stageEvolutionLine(id).map(form=>`<button class="secondary-button" data-dex-stage-select="${form}" ${form===id?'disabled':''}>${name(form)}</button>`).join('')}</div><p>${tr('dexStageHint')}</p></section>`;
+    const root=document.createElement('div');root.className='dex-stage-overlay';root.dataset.species=String(id);root.dataset.mode='animation';root.dataset.action='idle';
+    root.innerHTML=`<section class="dex-stage-dialog" role="dialog" aria-modal="true" aria-label="${tr('dexStageTitle')}" tabindex="-1"><button class="secondary-button" data-close-dex-stage>${tr('dexStageClose')}</button><div class="dex-preview-modes"><button class="secondary-button" data-dex-mode="animation" aria-pressed="true">${tr('dexAnimationMode')}</button><button class="secondary-button" data-dex-mode="portrait" aria-pressed="false">${tr('dexPortraitMode')}</button></div><div class="dex-stage-canvas"></div><div class="dex-animation-actions" role="group" aria-label="${tr('dexAnimationActions')}">${LAYER_ACTIONS.map(action=>`<button class="secondary-button" data-dex-action="${action}" aria-pressed="${action==='idle'}">${tr('dexAction'+action)}</button>`).join('')}</div><p class="dex-animation-status" role="status"></p><div class="dex-stage-forms">${stageEvolutionLine(id).map(form=>`<button class="secondary-button" data-dex-stage-select="${form}" ${form===id?'disabled':''}>${name(form)}</button>`).join('')}</div><p data-dex-hint>${tr('dexAnimationHint')}</p></section>`;
     document.body.append(root);
     root.querySelector('.dex-stage-dialog').focus();
-    import('./dex-stage.js').then(({openDexStage})=>{if(root.isConnected)openDexStage(id,root.querySelector('.dex-stage-canvas'));}).catch(()=>{if(root.isConnected)root.querySelector('.dex-stage-canvas').textContent=tr('dexStageLoadFailed');});return;
+    renderDexPreview(root);return;
   }
-  if(button.dataset.dexStageSelect){const id=Number(button.dataset.dexStageSelect),overlay=button.closest('.dex-stage-overlay');if(!overlay)return;overlay.querySelectorAll('[data-dex-stage-select]').forEach(item=>item.disabled=Number(item.dataset.dexStageSelect)===id);import('./dex-stage.js').then(({openDexStage})=>{if(overlay.isConnected)openDexStage(id,overlay.querySelector('.dex-stage-canvas'));});return;}
+  if(button.dataset.dexStageSelect){const id=Number(button.dataset.dexStageSelect),overlay=button.closest('.dex-stage-overlay');if(!overlay)return;overlay.dataset.species=String(id);overlay.querySelectorAll('[data-dex-stage-select]').forEach(item=>item.disabled=Number(item.dataset.dexStageSelect)===id);renderDexPreview(overlay);return;}
+  if(button.dataset.dexAction){const root=button.closest('.dex-stage-overlay');root.dataset.action=button.dataset.dexAction;root.querySelectorAll('[data-dex-action]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));selectDexAnimationAction(button.dataset.dexAction);return;}
+  if(button.dataset.dexMode){const root=button.closest('.dex-stage-overlay');root.dataset.mode=button.dataset.dexMode;renderDexPreview(root);return;}
   if(button.hasAttribute('data-close-dex-stage')){dismissDexStage();return;}
   if(button.dataset.campFilter){
     warehouseFilter=button.dataset.campFilter;

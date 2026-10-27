@@ -10,6 +10,7 @@ import { guardianBonus } from './relics.js';
 import {familyTeamBonuses,combatSignature,familyTalent} from './family-talents.js';
 import {pushCombatText,advanceCombatText} from './combat-feedback.js';
 import {recordPartnerDamage} from './horde-contributions.js';
+import {recordCreatureCast,recordCreatureHit} from './creature-action-state.js';
 import {creditSupport} from './horde-support-metrics.js';
 import {markMovement} from './horde-training-lesson.js';
 import {familyFieldSupport} from './family-field-support.js';
@@ -101,7 +102,7 @@ function hit(h,e,damage,dx=0,dy=0,push=0,ownerId=null) {
   const movingBonus=h.motionTime>0?1+h.upgrades.momentum*.075:1;
   const applied=damage*(1-absorption)*bossBonus*movingBonus;
   e.hp=Math.max(0,e.hp-applied); e.flash=0.15; h.combatDamage+=applied;
-  if(ownerId)recordPartnerDamage(h,ownerId,applied);
+  if(ownerId){recordPartnerDamage(h,ownerId,applied);recordCreatureHit(h,e,ownerId);}
   if(applied>=1)pushCombatText(h,{x:e.x,y:e.y-22,value:applied});
   if(h.upgrades.ember>0){e.burn=Math.max(e.burn??0,1.6+h.upgrades.ember*.55);h.effectsApplied++;}
   if(h.upgrades.frostbite>0){e.slow=Math.max(e.slow,1+h.upgrades.frostbite*.45);h.effectsApplied++;}
@@ -170,6 +171,7 @@ function cast(h,s,index){
   const angles=[-0.9,1.8,0.65],ox=h.hero.x+Math.cos(angles[index])*39,oy=h.hero.y+Math.sin(angles[index])*32;
   const target=nearest(h,ox,oy,500);
   h.skillCasts[index]++;
+  recordCreatureCast(h,p,index);
   triggerFamilySignature(h,s,p,h.skillCasts[index],attack);
   if(specialty.role==='control')for(const e of h.enemies)if(e.hp>0&&distance(e,h.hero)<180)e.slow=Math.max(e.slow,.8+.45*specialty.rank);
   if(mode===0){ // 追踪叶针，快速直射与穿透弹体

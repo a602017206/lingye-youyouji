@@ -1,0 +1,15 @@
+/* 原创伙伴PNG的轻量呼吸和职业差异；不创建额外图片、计时器或逐对象DOM。 */
+.partner-art>.creature,.collection-card>.creature,.camp-job-card>.creature,.dex-card>.creature,.mini-route>.creature,.battle-creature>.creature{
+ transform-origin:50% 82%;
+ animation:creature-breathe 2.65s ease-in-out infinite;
+ will-change:transform;
+}
+.partner-card:nth-child(3n+2) .creature,.camp-job-card:nth-child(3n+2)>.creature{animation-name:creature-hover;animation-duration:3.1s}
+.partner-card:nth-child(3n+3) .creature,.camp-job-card:nth-child(3n+3)>.creature{animation-name:creature-heavy;animation-duration:2.3s}
+.partner-card:nth-child(3n+2) .creature{animation-delay:-.8s}
+.partner-card:nth-child(3n+3) .creature{animation-delay:-1.3s}
+@keyframes creature-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025,.975)}}
+@keyframes creature-hover{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+@keyframes creature-heavy{0%,100%{transform:translateY(0) scale(1)}48%{transform:translateY(-1px) scale(1.015,.985)}60%{transform:translateY(0) scale(.985,1.015)}}
+@media(prefers-reduced-motion:reduce){.partner-art>.creature,.collection-card>.creature,.camp-job-card>.creature,.dex-card>.creature,.mini-route>.creature,.battle-creature>.creature{animation:none!important;will-change:auto!important}}
+body[data-reduced-motion="true"] .partner-art>.creature,body[data-reduced-motion="true"] .collection-card>.creature,body[data-reduced-motion="true"] .camp-job-card>.creature,body[data-reduced-motion="true"] .dex-card>.creature,body[data-reduced-motion="true"] .mini-route>.creature,body[data-reduced-motion="true"] .battle-creature>.creature{animation:none!important;will-change:auto!important}
