@@ -16,5 +16,13 @@ export function artPath(category,id){
 }
 export function itemIcon(category,id,iconFallback,iconName){
  const path=artPath(category,id);
- return path?'<img class="camp-original-item-icon" src="'+path+'" width="46" height="46" alt="" loading="lazy" draggable="false" />':iconFallback(iconName);
+ return path?'<span class="camp-art" data-camp-art="'+category+'/'+id+'"><img class="camp-original-item-icon" src="'+path+'" width="256" height="256" alt="" loading="lazy" draggable="false" /><span class="camp-art-fallback" hidden>'+iconFallback(iconName)+'</span></span>':iconFallback(iconName);
+}
+// 保留旧界面图标供网络/解码失败时使用，不改变资源登记、不循环重试坏图。
+export function handleCampArtError(event){
+ const image=event.target;
+ if(!image?.matches?.('img.camp-original-item-icon'))return;
+ const container=image.closest('[data-camp-art]'),fallback=container?.querySelector('.camp-art-fallback');
+ if(!fallback)return;
+ image.hidden=true;fallback.hidden=false;container.dataset.artFailed='true';
 }

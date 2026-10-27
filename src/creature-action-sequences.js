@@ -1,6 +1,7 @@
 // 完整角色的重绘动作图集；待机与资源失败继续使用原分层播放器。
 export {ACTION_SEQUENCES} from './creature-action-sequence-data.js';
 import {ACTION_SEQUENCES} from './creature-action-sequence-data.js';
+import {createCreatureImageCache,creatureImageCache,atlasBytes} from './creature-image-cache.js';
 
 // 无独立分层的伙伴也能播放完整角色姿态，动作时间只影响显示。
 export function sequencePoseAt(sequence,time,{phase,reduced=false,mobile=false}={}){
@@ -18,16 +19,11 @@ export function sequenceFrameAt(sequence,phase){
  return index<0?sequence.frames.length-1:index;
 }
 export function createActionSequenceCache(createImage=()=>new Image()){
- const entries=new Map();
- return {get(id,action){
-  const sequence=ACTION_SEQUENCES[id]?.[action];if(!sequence)return null;
-  const key=`${id}:${action}`;
-  if(!entries.has(key)){
-   const image=createImage(),entry={image,ready:false};entries.set(key,entry);
-   image.onload=()=>{entry.ready=true;};image.onerror=()=>{entry.ready=false;};image.src=sequence.src;
-  }
-  const entry=entries.get(key);return entry.ready?entry.image:null;
- }};
+ return actionCache(createCreatureImageCache({createImage}));
 }
-const cache=createActionSequenceCache();
+function actionCache(images){return {
+ get(id,action){const sequence=ACTION_SEQUENCES[id]?.[action];return sequence?images.get(sequence.src,atlasBytes(sequence.frames)):null;},
+ clear:()=>images.clear(),
+};}
+const cache=actionCache(creatureImageCache);
 export const actionSequenceImage=(id,action)=>cache.get(id,action);

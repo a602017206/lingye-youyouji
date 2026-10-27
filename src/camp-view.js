@@ -50,7 +50,7 @@ export function campView(s,tr,icon,img,name,selectedTraining,warehouseFilter='al
          +'<button class="secondary-button" data-c4-batch="'+id+'" data-c4-quantity="3" '+(batchOk?'':'disabled')+'>'+tr('c4BatchThree')+'</button></div></article>';
     }).join('')+'</div></section>'
     +'<section class="camp-section"><div class="section-heading"><h2>'+icon('shield')+tr('campLoadout')+'</h2><small>'+tr('campLoadoutHint')+'</small></div>'
-    +'<div class="camp-loadout-fields"><label>'+tr('campPotion')+'<select id="camp-loadout-potion">'+options('potion')+'</select></label><label>'+tr('campTool')+'<select id="camp-loadout-tool">'+options('tool')+'</select></label>'
+    +'<div class="camp-loadout-fields"><label><span class="camp-loadout-preview">'+itemIcon('consumables',c.potionSlot,icon,'potion')+tr('campPotion')+'</span><select id="camp-loadout-potion">'+options('potion')+'</select></label><label><span class="camp-loadout-preview">'+itemIcon('consumables',c.toolSlot,icon,'spark')+tr('campTool')+'</span><select id="camp-loadout-tool">'+options('tool')+'</select></label>'
     +'<button class="primary-button" data-action="camp-prepare-run">'+tr('campRestartBattle')+'</button></div></section>'
     +campC4View(s,tr,icon,name,selectedTraining)
     +equipmentView(s,tr,icon,name)

@@ -18,6 +18,7 @@ export function updateHordeDevices(h,s,dt,maxHp){
  h.devices.push(device);if(h.devices.length>3)h.devices.shift();
  h.deviceMaxHp=maxHp;
  const reaction=deviceReaction(h,s,device);
+ if(reaction?.healed>0)creditSupport(h,owner?.id,'healing',reaction.healed);
  if(reaction){h.deviceReactions??={};h.deviceReactions[reaction.kind]=(h.deviceReactions[reaction.kind]??0)+1;}
  h.deviceStats??={shield:0,trap:0,supply:0};
  h.deviceStats[talent.kind]++;

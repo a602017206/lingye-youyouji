@@ -1,8 +1,8 @@
-// 战斗表现瞬时状态：每名伙伴独立施法，命中事件有严格数量与时间上限，不参与存档。
+// 普通战斗表现为瞬时状态；专属施法的起手与时长从待施法记录恢复，命中事件仍不入档。
 import {SPECIES} from './data.js';
-export function recordCreatureCast(h,p,index){
+export function recordCreatureCast(h,p,index,timing={}){
  h.creatureActions??={};
- h.creatureActions[p.id]={start:h.elapsed,index,species:p.species};
+ h.creatureActions[p.id]={start:h.elapsed,index,species:p.species,...timing};
 }
 export function recordCreatureHit(h,e,ownerId){
  if(!ownerId)return;
@@ -13,10 +13,11 @@ export function recordCreatureHit(h,e,ownerId){
 export function creatureActionAt(h,id){
  const action=h.creatureActions?.[id];if(!action)return {state:'idle',progress:0};
  const age=h.elapsed-action.start;
- if(age<0||age>=.6)return {state:'idle',progress:0};
- if(age<.13)return {state:'windup',progress:age/.13};
- if(age<.31)return {state:'strike',progress:(age-.13)/.18};
- return {state:'recover',progress:Math.min(1,(age-.31)/.29)};
+ const windup=action.windup??.13,extra=action.skill?{skill:action.skill}:{};
+ if(age<0||age>=windup+.47)return {state:'idle',progress:0};
+ if(age+(action.skill?1e-6:0)<windup)return {state:'windup',progress:age/windup,...extra};
+ if(age<windup+.18)return {state:'strike',progress:Math.max(0,(age-windup)/.18),...extra};
+ return {state:'recover',progress:Math.min(1,(age-windup-.18)/.29),...extra};
 }
 export function evolutionActionScale(id){
  const stage=SPECIES[id]?.stage??0;

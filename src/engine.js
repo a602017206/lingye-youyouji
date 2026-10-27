@@ -6,6 +6,8 @@ import { equipmentBonuses } from './equipment.js';
 import { trainingMultiplier } from './camp-training.js';
 import {careerMultiplier} from './partner-careers.js';
 import {hordeOfflineRates} from './horde-offline-economy.js';
+import {validateFamilyCasts} from './family-active-skills.js';
+import {validateJourneyCollection,validateRunRelic} from './journey-collections.js';
 import {DEX_RESEARCH,researchKey} from './dex-research.js';
 import {familyTeamBonuses} from './family-talents.js';
 const CLAIM_KEYS=new Set(['firstSteps','friends','champion',...DEX_RESEARCH.map(entry=>researchKey(entry.count))]);
@@ -270,27 +272,11 @@ export function exploreEvent(s, choice) {
   return true;
 }
 export function estimateRates(s) {
-  const copy = structuredClone(s); copy.buffs = { power: 0, guard: 0, fortune: 0 }; copy.wins = 5; copy.seconds = 3; spawnEnemy(copy);
-  let hits = Math.ceil(copy.enemy.maxHp / battleDamage(copy, () => .5));
-  if (copy.region === 3 && !teamMembers(copy).some(p => SPECIES[p.species].type === 'frost')) hits = Math.ceil(hits * 1.25);
-  const probe = structuredClone(copy); probe.partyHp = maxPartyHp(probe); let canWin = false;
-  for (let turn = 0; turn < 600; turn++) {
-    probe.seconds++;
-    const adapted = teamMembers(probe).some(p => SPECIES[p.species].type === REGIONS[probe.region].element);
-    if (!(probe.region === 3 && probe.seconds % 5 === 0 && !adapted)) probe.enemy.hp -= battleDamage(probe, () => .5);
-    if (probe.enemy.hp <= 0) { canWin = true; break; }
-    let incoming = probe.enemy.attack * bondEffects(probe).guard;
-    if (probe.region === 2 && probe.seconds % 12 >= 6 && !adapted) incoming *= 1.25;
-    probe.partyHp -= Math.max(1, Math.round(incoming)); applyRegionRule(probe);
-    if (probe.partyHp <= 0) break;
-  }
-  if (!canWin) return { secondsPerWin: 0, onlineCoinsPerSecond: 0, offlineCoinsPerSecond: 0, xpPerSecond: 0, materialsPerSecond: 0, blocked: true };
-  const survival = Math.min(1, maxPartyHp(copy) / Math.max(1, copy.enemy.attack * Math.max(1, hits - 1) * 3));
-  const secondsPerWin = Math.max(2, hits + .75) / Math.max(.15, survival);
-  return { secondsPerWin, onlineCoinsPerSecond: battleReward(copy) / secondsPerWin,
-    offlineCoinsPerSecond: battleReward(copy) / secondsPerWin * .6,
-    xpPerSecond: (10 + s.region * 4 + s.depths[s.region] * 2) / secondsPerWin * .6,
-    materialsPerSecond: ((1 + s.depths[s.region]) / 2 + .6) / secondsPerWin * .6 };
+  // 展示和结算共用现有群潮公式，暂停时预估为零，不伪造在线收益承诺。
+  const rates = hordeOfflineRates(s), paused = !s.running;
+  return { offlineCoinsPerSecond: paused ? 0 : rates.coins,
+    xpPerSecond: paused ? 0 : rates.xp, materialsPerSecond: paused ? 0 : rates.materials,
+    blocked: rates.blocked, paused };
 }
 export function settleOffline(s, now = Date.now()) {
   const seconds = s.running ? Math.min(28800, Math.max(0, Math.floor((now - s.savedAt) / 1000))) : 0;
@@ -322,6 +308,7 @@ export function validateSave(s) {
   if (!validateCamp(s)) return false;
   if (!vector(s.materials, RESOURCE_CAP) || !vector(s.mastery, 5) || !vector(s.depths, 5) || !s.depths.every((depth, i) => depth <= s.mastery[i])) return false;
   if (!Array.isArray(s.claimed) || !s.claimed.every(key => CLAIM_KEYS.has(key)) || new Set(s.claimed).size !== s.claimed.length) return false;
+  if(!validateJourneyCollection(s))return false;
   // guardianTokens 可选：兼容历史v2存档；拒绝伪造的纪念物与重复条目。
   if(s.guardianTokens!==undefined && (!Array.isArray(s.guardianTokens)||s.guardianTokens.length>GUARDIAN_TOKENS.length||!s.guardianTokens.every(k=>integer(k,GUARDIAN_TOKENS.length-1))||new Set(s.guardianTokens).size!==s.guardianTokens.length))return false;
   // 新群潮切片采用可选的紧凑快照字段，旧版v2存档没有此字段时仍合法。
@@ -340,7 +327,9 @@ export function validateSave(s) {
     if(h?.shieldPool!==undefined&&!finite(h.shieldPool,maxPartyHp(s)*.16+1))return false;
     if(h?.activeCooldowns!==undefined&&(!h.activeCooldowns||typeof h.activeCooldowns!=='object'||Array.isArray(h.activeCooldowns)
       ||Object.keys(h.activeCooldowns).length>120||Object.entries(h.activeCooldowns).some(([id,v])=>
-        !s.collection.some(p=>p.id===id)||!finite(v,617))))return false;
+        !s.collection.some(p=>p.id===id)||!finite(v,618))))return false;
+    if(!validateFamilyCasts(s,h))return false;
+    if(!validateRunRelic(s,h))return false;
     if (!h || !integer(h.region, 5) || !Number.isInteger(h.seed) ||
       !finite(h.elapsed, 600) || !integer(h.kills, 100000) || !integer(h.packs, 10000) ||
       !integer(h.rank, 100) || h.rank < 1 || !finite(h.xp, 999) ||

@@ -9,8 +9,12 @@ import {openDexAnimation,closeDexAnimation,selectDexAnimationAction} from './dex
 import {LAYER_ACTIONS} from './creature-layer-animation.js';
 import {stageEvolutionLine} from './dex-stage-theme.js';
 import {claimDexResearch} from './dex-research.js';
+import {claimJourneyItem,equipJourneyRelic,claimCurioResearch,journeyItem,CURIO_RESEARCH_REWARD} from './journey-collections.js';
+import {handleCampArtError} from './art-registry.js';
+import {creditSupport} from './horde-support-metrics.js';
 import { createHorde, stepHorde, serializeHorde, chooseHordeUpgrade, triggerHordePulse, captureHordeTarget, setHordeDirection, useHordeSupply, returnUnusedSupplies,castHordeActive } from './horde.js';
 import { renderHordeCanvas } from './horde-render.js';
+import {releaseCreatureAnimations,clearCreatureAnimations} from './creature-animation-resources.js';
 import {setChallengeTier} from './horde-challenge.js';
 import {createTrainingArena,trainingAction,trainingArenaMarkup,stepTrainingArena} from './training-arena.js';
 import { hordePageMarkup, updateHordePanels } from './horde-view.js';
@@ -105,6 +109,7 @@ function persist(notify = false) {
   if (notify || !saveHealthy) toast(saveHealthy ? 'saved' : 'saveFail');
 }
 function shell() {
+  if(page!=='adventure')releaseCreatureAnimations('horde');
   // 整页重建时释放旧列表引用，避免切回战场后仍保留整页伙伴节点。
   secondarySnapshot=undefined;
   applyTheme(state);
@@ -227,7 +232,7 @@ function animateAttack() {
 function handleAction(action) {
   if (action === 'pause') { state.running = !state.running; lastTick = performance.now(); persist(); }
   if (action === 'speed') { state.settings.speed = state.settings.speed === 1 ? 2 : 1; applyTheme(state); persist(); }
-  if (action === 'horde-pulse') { triggerHordePulse(horde, state); refresh(); return; }
+  if (action === 'horde-pulse') { if(triggerHordePulse(horde, state))persist();refresh(); return; }
   if (action === 'horde-item-potion'||action==='horde-item-tool') {
     toast(useHordeSupply(horde,state,action==='horde-item-potion'?'potion':'tool')?'campItemUsed':'campItemUnavailable');persist();refresh();return;
   }
@@ -281,7 +286,11 @@ function handleAction(action) {
   }
   if (action === 'ultimate' && game.ultimate(state)) $('#battle-stage')?.classList.add('ultimate-flash');
   if (action === 'boss') game.challengeBoss(state);
-  if (action === 'heal') toast(game.heal(state) ? 'healed' : 'noHeal');
+  if (action === 'heal') {
+    const before=Math.max(0,state.partyHp),used=game.heal(state);
+    if(used&&!horde.finished)creditSupport(horde,null,'healing',Math.max(0,state.partyHp)-before);
+    toast(used?'healed':'noHeal');if(used)persist();
+  }
   if (action === 'save') persist(true);
   if (action === 'settings' || action === 'guide') { openModal(action); return; }
   if (action === 'close') { closeModal(); return; }
@@ -299,6 +308,7 @@ function handleAction(action) {
 }
 document.addEventListener('click', event => {
   if(event.target.closest('[data-training-open]')){
+    releaseCreatureAnimations('horde');
     const arena=createTrainingArena(),root=document.createElement('div');
     root.id='standalone-training';root.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.88);overflow:auto;padding:3vh max(3vw,12px)';
     const draw=()=>{root.innerHTML=trainingArenaMarkup(arena);renderHordeCanvas(root.querySelector('#training-canvas'),arena.horde,arena.state);};
@@ -306,7 +316,7 @@ document.addEventListener('click', event => {
     const direction=()=>{const x=Number(keys.has('ArrowRight')||keys.has('KeyD'))-Number(keys.has('ArrowLeft')||keys.has('KeyA')),y=Number(keys.has('ArrowDown')||keys.has('KeyS'))-Number(keys.has('ArrowUp')||keys.has('KeyW'));trainingAction(arena,x||y?'move':'stop',{x,y});};
     const keydown=e=>{if(e.key==='Escape'){close();return;}if(['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','KeyW','KeyA','KeyS','KeyD'].includes(e.code)){e.preventDefault();keys.add(e.code);direction();}};
     const keyup=e=>{keys.delete(e.code);direction();};
-    const close=()=>{root.remove();window.removeEventListener('keydown',keydown,true);window.removeEventListener('keyup',keyup,true);};
+    const close=()=>{root.remove();releaseCreatureAnimations('training');window.removeEventListener('keydown',keydown,true);window.removeEventListener('keyup',keyup,true);};
     root.addEventListener('click',e=>{
       if(e.target.closest('[data-training-close]')){close();return;}
       if(e.target.closest('[data-training-restart]'))trainingAction(arena,'restart');
@@ -323,7 +333,7 @@ document.addEventListener('click', event => {
     window.addEventListener('keydown',keydown,true);window.addEventListener('keyup',keyup,true);
     document.body.append(root);draw();
     let last=performance.now(),accum=0;
-    const frame=now=>{if(!root.isConnected)return;accum=Math.min(.1,accum+(now-last)/1000);last=now;let changed=false;
+    const frame=now=>{if(!root.isConnected)return;if(document.hidden){last=now;accum=0;requestAnimationFrame(frame);return;}accum=Math.min(.1,accum+(now-last)/1000);last=now;let changed=false;
       while(accum>=1/30){const before=arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed;stepTrainingArena(arena);accum-=1/30;if(before!==arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed)changed=true;}
       if(changed)draw();else renderHordeCanvas(root.querySelector('#training-canvas'),arena.horde,arena.state);
       requestAnimationFrame(frame);
@@ -334,6 +344,16 @@ document.addEventListener('click', event => {
   if (!button || button.disabled) return;
   if (button.matches('a.brand')) { event.preventDefault(); navigatePage('adventure'); return; }
   if (button.dataset.page) { navigatePage(button.dataset.page); return; }
+  if(button.dataset.journeyClaim){
+    const id=button.dataset.journeyClaim,ok=claimJourneyItem(state,id);
+    toast(ok?(journeyItem(id).kind==='relic'?'journeyRelicClaimed':'journeyCurioClaimed'):'journeyClaimFailed');persist();refresh();return;
+  }
+  if(button.dataset.journeyEquip){
+    toast(equipJourneyRelic(state,button.dataset.journeyEquip==='none'?null:button.dataset.journeyEquip)?'journeyEquippedToast':'journeyEquipFailed');persist();refresh();return;
+  }
+  if(button.dataset.curioResearch){
+    toast(claimCurioResearch(state,button.dataset.curioResearch)?'journeyResearchToast':'journeyResearchFailed',{coins:CURIO_RESEARCH_REWARD});persist();refresh();return;
+  }
   if(button.dataset.dexResearch){const success=claimDexResearch(state,Number(button.dataset.dexResearch));if(success){persist();refresh();}return;}
   if(button.dataset.dexStage){
     dismissDexStage();
@@ -513,8 +533,9 @@ document.addEventListener('keyup', event => {
 });
 window.addEventListener('pagehide', persist);
 window.addEventListener('pagehide', dismissDexStage);
+window.addEventListener('pagehide', clearCreatureAnimations);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) persist();
+  if (document.hidden) {persist();clearCreatureAnimations();}
   else {
     const result = game.settleOffline(state);settleCamp(state);
     if (result.coins) { Object.assign(offline, result); persist(); openModal('offline'); }
@@ -535,14 +556,17 @@ function runHordeFrame(now) {
   if (!document.hidden) {
     hordeAccum = Math.min(100, hordeAccum + passed);
     for (let n = 0; hordeAccum >= 1000 / 30 && n < 3; n++) {
-      const beforePacks = horde.packs, beforeFinished = horde.finished;
+      const beforePacks = horde.packs, beforeFinished = horde.finished, beforeFamilyCast = horde.familyCastRevision??0,beforeRelic=horde.relicRevision??0;
       if(!document.querySelector('#standalone-training'))stepHorde(horde, state, 1 / 30); hordeAccum -= 1000 / 30;
-      if (horde.packs !== beforePacks || (!beforeFinished && horde.finished)) persist();
+      const collectionChanged=(horde.relicRevision??0)!==beforeRelic;
+      if (horde.packs !== beforePacks || (!beforeFinished && horde.finished) || (horde.familyCastRevision??0)!==beforeFamilyCast || collectionChanged) persist();
+      if(page==='adventure'&&((horde.familyCastRevision??0)!==beforeFamilyCast||collectionChanged))updateHordePanels(horde,state,tr,icon);
     }
-    if (page === 'adventure') renderHordeCanvas($('#horde-canvas'), horde, state);
+    if (page === 'adventure'&&!document.querySelector('#standalone-training')) renderHordeCanvas($('#horde-canvas'), horde, state);
   } else hordeAccum = 0;
   requestAnimationFrame(runHordeFrame);
 }
+document.addEventListener('error',handleCampArtError,true);
 shell();
 requestAnimationFrame(runHordeFrame);
 if (loaded.recovered) toast('recovered');

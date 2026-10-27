@@ -5,6 +5,9 @@ import { teamMembers, maxPartyHp } from './engine.js';
 import { UPGRADE_INFO, buildSynergies } from './horde-build.js';
 import {combatRole,resonanceKey} from './combat-tactics.js';
 import {skillLoadout,ACTIVE_SKILLS} from './skill-loadouts.js';
+import {journeyCollection} from './journey-collections.js';
+import {hordeDeliveryView} from './horde-delivery-view.js';
+import {itemIcon} from './art-registry.js';
 import {hordeReport,scoutWarningLead} from './horde-report.js';
 import {hordeArchetypeProgress} from './horde-build-archetypes.js';
 import {hordeMilestones,hordeGrade} from './horde-milestones.js';
@@ -54,19 +57,21 @@ export function hordePageMarkup(s,tr,icon){
     +"<div class='horde-vignette'></div>"
     +"<div class='horde-boss-readout' id='horde-boss-readout' hidden><strong id='horde-boss-name'></strong><span id='horde-boss-phase'></span><small id='horde-boss-hint'></small></div>"
     +"<div class='horde-top'><span class='horde-pill'>"+icon('compass')+tr('hordeTrial')+' · '+tr(REGIONS[s.region].name)+"</span><span class='horde-pill danger' id='horde-danger'>"+tr('hordeIncoming')+"</span></div>"
-    +"<div class='horde-mid-message' id='horde-end' hidden></div><div class='horde-upgrade-overlay' id='horde-choice' hidden></div>"
+    +"<div class='horde-upgrade-overlay' id='horde-choice' hidden></div>"
     +"<div class='horde-bottom'><span id='horde-time'>00:00</span><span>"+tr('hordeEnemies')+" <b id='horde-count'>0</b></span><span>"+tr('hordeKills')+" <b id='horde-kills'>0</b></span></div></div>"
     +"<div class='horde-controls'><button class='primary-button' data-action='horde-capture' id='horde-capture'>"+icon('ball')+tr('capture')+"</button>"
     +"<button class='pause-button' data-action='pause' id='horde-pause'>"+icon('pause')+tr('pause')+"</button>"
     +"<button class='ultimate-button' data-action='horde-pulse' id='horde-pulse'>"+icon('bolt')+tr('ultimate')+" <span id='horde-energy'>0/100</span></button>"
     +"<button class='pause-button' data-action='horde-mode' id='horde-mode'>"+tr('hordeHold')+"</button></div></div>"
-    +"<div class='horde-supplies'><button data-action='horde-item-potion' id='horde-item-potion'>"+icon('potion')+tr('campPotion')+" <b id='horde-potion-count'>0</b><small id='horde-potion-cd'></small></button>"
-    +"<button data-action='horde-item-tool' id='horde-item-tool'>"+icon('spark')+tr('campTool')+" <b id='horde-tool-count'>0</b><small id='horde-tool-cd'></small></button>"
+    +"<section class='horde-result-panel' id='horde-end' aria-live='polite' hidden></section>"
+    +"<div class='horde-supplies'><button data-action='horde-item-potion' id='horde-item-potion'><span class='horde-supply-art' id='horde-potion-art'></span>"+tr('campPotion')+" <b id='horde-potion-count'>0</b><small id='horde-potion-cd'></small></button>"
+    +"<button data-action='horde-item-tool' id='horde-item-tool'><span class='horde-supply-art' id='horde-tool-art'></span>"+tr('campTool')+" <b id='horde-tool-count'>0</b><small id='horde-tool-cd'></small></button>"
     +"<button data-page='campWork'>"+icon('leaf')+tr('campWork')+"</button></div>"
     +"<div class='horde-metrics'><div><small>"+tr('hordeLevel')+"</small><strong id='horde-level'>1</strong></div>"
     +"<div class='horde-xp-track'><div id='horde-xp-fill'></div></div><div><small>"+tr('hordeHeroHp')+"</small><strong id='horde-hp'>100%</strong></div>"
     +"<div><small>"+tr('hordeBuild')+"</small><strong id='horde-build'>-</strong></div></div>"
     +"<div class='horde-tactics-strip'><strong>"+tr('combatResonanceTitle')+"</strong><span id='horde-tactics-status'>"+tr('combatResonanceOff')+"</span></div>"
+    +"<div class='horde-relic-banner'><span id='horde-relic-info'></span><button class='text-button' data-page='bag'>"+tr('journeyTitle')+"</button></div>"
     +"<div class='horde-synergies' id='horde-synergies'></div><div class='horde-training'><label>试炼难度 <select id='horde-tier' data-action='horde-tier'>"+CHALLENGE_TIERS.map(x=>"<option value='"+x.id+"'>"+x.name+"</option>").join('')+"</select></label><small id='horde-help'>新手提示：先选择强化，再利用移动躲避红色预警区域。</small><div id='horde-lesson' role='status'></div><button class='secondary-button' data-training-open>独立新手训练场</button></div>"
     +"<div class='horde-skill-strip'>"+skills+"</div><div class='horde-active-actions'>"+activeButtons+"</div><div class='horde-explainer'>"+tr('hordeInfo')+"</div>"
     +"<div id='ecology-panel'></div><section class='journal'><div class='section-heading'><h2>"+icon('book')+tr('logTitle')+"</h2></div>"
@@ -75,6 +80,8 @@ export function hordePageMarkup(s,tr,icon){
 export function updateHordePanels(h,s,tr,icon){
   const $=id=>document.getElementById(id);
   if(!$('horde-canvas'))return;
+  const relic=$('horde-relic-info'),selected=journeyCollection(s).selected;
+  if(relic){const relicName=id=>tr(id?'journeyName'+id:'journeyNone');relic.textContent=tr('journeyRunRelic',{name:relicName(h.runRelic)})+(selected!==h.runRelic?' · '+tr('journeyNextRelic',{name:relicName(selected)}):'');}
   if($('horde-tier')){$('horde-tier').value=challengeTier(h).id;$('horde-tier').disabled=h.elapsed>0||h.finished;}
   const guide=$('horde-help');if(guide){const lesson=hordeTutorial(h,s);guide.textContent='提示 · '+lesson.text;}
   const training=$('horde-lesson');if(training){const progress=lessonProgress(h);training.textContent='实战教学 '+progress.done.filter(Boolean).length+'/5 · '+(progress.step?progress.step.name+'：'+progress.step.hint:'全部教学任务完成');}
@@ -86,6 +93,8 @@ export function updateHordePanels(h,s,tr,icon){
   $('horde-hp').textContent=Math.max(0,Math.round(s.partyHp/maxPartyHp(s)*100))+'%';
   for(const slot of ['potion','tool']){
     const key=h.supplySlots?.[slot],left=h.supplies?.[key]??0;
+    const art=$('horde-'+slot+'-art');
+    if(art&&art.dataset.supply!==String(key)){art.innerHTML=itemIcon('consumables',key,icon,slot==='potion'?'potion':'spark');art.dataset.supply=String(key);}
     const cooldown=Math.max(0,Math.ceil((slot==='potion'?30:40)-(h.elapsed-(h.itemCooldowns?.[slot]??-100))));
     $('horde-'+slot+'-count').textContent=left;
     $('horde-'+slot+'-cd').textContent=cooldown?cooldown+'s':tr('campReady');
@@ -102,9 +111,10 @@ export function updateHordePanels(h,s,tr,icon){
     const skill=skillLoadout(s,p.id).active,button=$('active-'+p.id),status=$('active-status-'+p.id);
     if(!button||!status)continue;
     const left=Math.max(0,Math.ceil((h.activeCooldowns?.[p.id]??0)-h.elapsed));
+    const winding=h.familyCasts?.find(c=>c.ownerId===p.id);
     const available=!!skill&&s.running&&!h.finished&&!h.pending.length&&left===0;
     button.disabled=!available;
-    status.textContent=!skill?tr('skillNotSet'):left?tr('skillCooldown',{seconds:left}):tr('skillReady');
+    status.textContent=winding?tr('skillWinding',{seconds:Math.max(0,winding.releaseAt-h.elapsed).toFixed(1)}):!skill?tr('skillNotSet'):left?tr('skillCooldown',{seconds:left}):tr('skillReady');
   }
   $('horde-danger').title=scoutWarningLead(s)>0?tr('hordeScoutWarning',{seconds:scoutWarningLead(s).toFixed(2)}):'';
   $('horde-danger').textContent=h.dangerMarkers?.length?tr('hordeWarningCount',{count:h.dangerMarkers.length}):h.bossStarted?tr('hordeBossLive'):h.elapsed>65?tr('hordeSurge'):tr('hordeIncoming');
@@ -125,5 +135,5 @@ export function updateHordePanels(h,s,tr,icon){
       +h.pending.map(key=>'<button class="horde-rarity-'+UPGRADE_INFO[key].rarity+'" data-horde-upgrade="'+key+'"><span>'+tr('hordeRarity'+UPGRADE_INFO[key].rarity)+'</span><strong>'+tr(HORDE_LABELS[key][0])+'</strong><small>'+tr(HORDE_LABELS[key][1])+'</small><em>'+tr('hordeRank')+' '+(h.upgrades[key]+1)+'/'+UPGRADE_INFO[key].maxRank+'</em></button>').join('')+'</div>';
   }
   const end=$('horde-end');end.hidden=!h.finished;
-  if(h.finished){const report=hordeReport(h,s);end.innerHTML='<h2>'+tr(h.defeated?'hordeLost':'hordeVictory')+'</h2><p>'+tr('hordeResult',{kills:h.kills})+'</p><div class="horde-report"><span>'+tr('hordeReportTime')+' '+report.seconds+'s</span><span>'+tr('hordeGrade')+' '+(report.grade??'-')+'</span><span>'+tr('hordeReportDamage')+' '+report.damage+'</span><span>'+tr('hordeReportSignatures')+' '+report.signatures+'</span><span>'+tr('hordeReportDodges')+' '+report.dodges+'</span><span>'+tr('hordeReportResonance')+' '+report.resonance+'</span><span>'+tr('hordeReportSupport')+' '+(report.workCount+report.exploreCount)+'</span></div><div class="horde-report-contributions"><strong>'+tr('hordePartnerContributionTitle')+'</strong>'+report.partners.entries.map(row=>'<span>'+SPECIES[row.species].name+' · '+tr('hordeReportDamage')+' '+row.damage+' / '+tr('hordeSupportHealing')+' '+Math.round(row.healing)+' / '+tr('hordeSupportShield')+' '+Math.round(row.shield)+' / '+tr('hordeSupportControl')+' '+row.control+'</span>').join('')+'<span>'+tr('hordeUnattributed')+' · '+report.partners.unattributed+'</span></div><button class="primary-button" data-action="horde-retry">'+tr('hordeRetry')+'</button>';}
+  if(h.finished){const report=hordeReport(h,s);end.innerHTML='<h2>'+tr(h.defeated?'hordeLost':'hordeVictory')+'</h2><p>'+tr('hordeResult',{kills:h.kills})+'</p><div class="horde-report"><span>'+tr('hordeReportTime')+' '+report.seconds+'s</span><span>'+tr('hordeGrade')+' '+(report.grade??'-')+'</span><span>'+tr('hordeReportDamage')+' '+report.damage+'</span><span>'+tr('hordeReportSignatures')+' '+report.signatures+'</span><span>'+tr('hordeReportDodges')+' '+report.dodges+'</span><span>'+tr('hordeReportResonance')+' '+report.resonance+'</span><span>'+tr('hordeReportSupport')+' '+(report.workCount+report.exploreCount)+'</span></div>'+hordeDeliveryView(report,s,tr)+'<button class="primary-button" data-action="horde-retry">'+tr('hordeRetry')+'</button>';}
 }

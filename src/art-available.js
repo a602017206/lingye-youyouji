@@ -1,2 +1,2 @@
 // 自动生成：仅在public/assets/camp下有合格独立PNG时为true，不得手写假地址。
-export const AVAILABLE_ART={};
+export const AVAILABLE_ART={"facilities/lumber":true,"facilities/mine":true,"facilities/garden":true,"facilities/workshop":true,"consumables/herbalPotion":true,"consumables/repelVial":true,"consumables/energySeal":true,"consumables/recoveryDraught":true,"consumables/swiftSigil":true,"consumables/frostVial":true,"consumables/fortifiedDraught":true,"consumables/reinforcedDisc":true};

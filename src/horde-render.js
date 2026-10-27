@@ -8,6 +8,7 @@ import {drawLayeredCreature,resolveLayerAction,animationPolicy} from './creature
 import {creatureAttackPose,creatureAttackStyle} from './creature-combat-vfx.js';
 import {creatureActionAt,evolutionActionScale,visibleCreatureHits} from './creature-action-state.js';
 import {ACTION_SEQUENCES} from './creature-action-sequences.js';
+import {retainCreatureAnimations} from './creature-animation-resources.js';
 
 const cache = new Map();
 const elementColors={grove:'#9be7a0',ember:'#f2aa77',tide:'#83cfee',frost:'#caeafa',spore:'#c7a0d9',aether:'#edcd87',
@@ -29,7 +30,7 @@ function actor(ctx,id,x,y,size,ally=false,flash=false,time=0,seed=0,moving=false
   const groundOffset=ally&&ACTION_SEQUENCES[id]?472/512-.65:.24;
   ctx.beginPath();ctx.ellipse(x,y+size*groundOffset,size*.29,size*.105,0,0,Math.PI*2);ctx.fill();
   const img=picture(id);
-  const layered=ally&&drawLayeredCreature(ctx,id,{x,y:y-size*.15,size,time,action:resolveLayerAction({action,moving,hurt:flash,hurtPhase}),reduced,mobile});
+  const layered=ally&&drawLayeredCreature(ctx,id,{x,y:y-size*.15,size,time,action:resolveLayerAction({action,moving,hurt:flash&&!action?.skill,hurtPhase}),reduced,mobile});
   if(!layered&&img){
     const motion=creatureMotion(id,time,{moving,hurt:flash,reduced,attacking,seed});
     const phase=action?.state==='windup' ? .15*action.progress : action?.state==='strike' ? .15+.55*action.progress : action?.state==='recover' ? .7+.3*action.progress : 0;
@@ -63,6 +64,14 @@ function drawFamilySkill(ctx,p){
  ctx.restore();
 }
 function drawPulse(ctx,p){
+ if(p.kind==='familyActive'){
+  if(p.action!=='flame'){drawFamilySkill(ctx,p);return;}
+  const fade=Math.max(0,p.life/p.max);
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);ctx.globalAlpha=fade*.8;
+  ctx.strokeStyle=elementColors[p.color]??'#ff884a';ctx.lineWidth=3+fade*5;
+  ctx.beginPath();ctx.moveTo(0,-30);ctx.lineTo(p.radius,-30);ctx.lineTo(p.radius,30);ctx.lineTo(0,30);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(p.radius,0);ctx.stroke();ctx.restore();return;
+ }
  if(p.kind==='familySignature'){drawFamilySkill(ctx,p);return;}
   const progress=1-p.life/p.max;
   ctx.save();ctx.globalAlpha=(1-progress)*.56;ctx.lineWidth=p.kind==='ultimate'?10:5;
@@ -126,6 +135,7 @@ export function renderHordeCanvas(canvas,h,s) {
   ctx.fillStyle=ambient;ctx.fillRect(0,0,HORDE_WIDTH,HORDE_HEIGHT);
   // 危险的敌群按Y值由远到近排序绘制，不把敌人合成一张虚假贴片。
   const reduced=!!s.settings?.reducedMotion||(typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+  retainCreatureAnimations(canvas.id==='training-canvas'?'training':'horde',teamMembers(s).slice(0,3).map(p=>p.species),{reduced});
   const enemies=[...h.enemies].sort((a,b)=>a.y-b.y);
   for(const e of enemies){
     const size=e.kind==='boss'?112:e.kind==='elite'?77:e.kind==='tank'?56:e.kind==='runner'?37:45;

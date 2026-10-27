@@ -1,10 +1,14 @@
 // E2-B 两槽战术构筑：一项主动技能和一枚辅助铭文，旧v3存档可缺省。
+import {healParty,grantShield} from './horde-support-metrics.js';
 import {SPECIES} from './data.js';
+import {FAMILY_ACTIVE_SKILLS,beginFamilyActive} from './family-active-skills.js';
 export const ACTIVE_SKILLS=Object.freeze({
  strike:{seconds:9,icon:'bolt'},
  ring:{seconds:13,icon:'spark'},
  ward:{seconds:17,icon:'shield'},
+ ...FAMILY_ACTIVE_SKILLS,
 });
+export const availableActiveSkills=species=>Object.fromEntries(Object.entries(ACTIVE_SKILLS).filter(([,meta])=>meta.family===undefined||SPECIES[species]?.family===meta.family));
 export const SUPPORT_GLYPHS=Object.freeze({
  focus:{icon:'bolt'},
  frost:{icon:'compass'},
@@ -15,7 +19,7 @@ export const skillLoadout=(s,id)=>({...EMPTY_LOADOUT,...s.camp?.skillLoadouts?.[
 export function setSkillSlot(s,id,slot,skill){
  if(!s.camp||!s.collection.some(p=>p.id===id)||!['active','support'].includes(slot))return false;
  const choices=slot==='active'?ACTIVE_SKILLS:SUPPORT_GLYPHS;
- if(skill!==null&&!Object.hasOwn(choices,skill))return false;
+ if(skill!==null&&(!Object.hasOwn(choices,skill)||slot==='active'&&!Object.hasOwn(availableActiveSkills(s.collection.find(p=>p.id===id).species),skill)))return false;
  s.camp.skillLoadouts??={};
  const next={...skillLoadout(s,id),[slot]:skill};
  if(next.active===null&&next.support===null)delete s.camp.skillLoadouts[id];
@@ -31,7 +35,7 @@ export function validateSkillLoadouts(s){
    if(!s.collection.some(p=>p.id===id)||!item||typeof item!=='object'||Array.isArray(item)
     ||Object.keys(item).some(k=>!['active','support'].includes(k))
     ||Object.keys(item).length!==2
-    ||item.active!==null&&!Object.hasOwn(ACTIVE_SKILLS,item.active)
+    ||item.active!==null&&!Object.hasOwn(availableActiveSkills(s.collection.find(p=>p.id===id).species),item.active)
     ||item.support!==null&&!Object.hasOwn(SUPPORT_GLYPHS,item.support))return false;
   }
  }
@@ -43,6 +47,8 @@ export function performActiveSkill(h,s,partner,hit,attack,maxHp){
  const {active,support}=skillLoadout(s,partner.id),meta=ACTIVE_SKILLS[active];
  if(!meta||h.finished||!s.running||h.pending.length||h.region!==s.region)return false;
  if(h.elapsed+0.0001<(h.activeCooldowns[partner.id]??0))return false;
+ if(!Object.hasOwn(availableActiveSkills(partner.species),active))return false;
+ if(FAMILY_ACTIVE_SKILLS[active])return beginFamilyActive(h,s,partner,active,support,maxHp);
  const px=h.hero.x,py=h.hero.y,near=e=>Math.hypot(e.x-px,e.y-py),target=h.enemies
   .filter(e=>e.hp>0&&near(e)<340+e.r).sort((a,b)=>near(a)-near(b))[0];
  const multiplier=support==='focus'?1.25:1;
@@ -59,8 +65,8 @@ export function performActiveSkill(h,s,partner,hit,attack,maxHp){
   }
  }else{
   if(s.partyHp>=maxHp&&h.shieldPool>=maxHp*.16-0.01)return false;
-  s.partyHp=Math.min(maxHp,s.partyHp+maxHp*.025);
-  h.shieldPool=Math.min(maxHp*.16,h.shieldPool+maxHp*.046);
+  healParty(h,s,maxHp*.025,maxHp,partner.id);
+  grantShield(h,maxHp*.046,maxHp*.16,partner.id);
   targets=h.enemies.filter(e=>e.hp>0&&near(e)<125+e.r);
   for(const e of targets)e.slow=Math.max(e.slow,.8);
  }

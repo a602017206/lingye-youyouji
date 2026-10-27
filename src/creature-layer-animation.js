@@ -3,6 +3,7 @@ export {LAYER_RIGS} from './creature-layer-rigs.js';
 import {LAYER_RIGS} from './creature-layer-rigs.js';
 import {ATTACK_SEQUENCES,attackFrameAt,attackFrameImage} from './creature-attack-frames.js';
 import {ACTION_SEQUENCES,sequenceFrameAt,sequencePoseAt,actionSequenceImage} from './creature-action-sequences.js';
+import {createCreatureImageCache,creatureImageCache,atlasBytes} from './creature-image-cache.js';
 export const LAYER_ACTIONS=Object.freeze(['idle','move','attack','hurt','cast']);
 export function animationPolicy({mobile=false,reduced=false,dpr=1}={}){
  return {fps:reduced?0:mobile?20:60,dpr:Math.min(mobile?1:2,dpr),maxActors:3};
@@ -64,20 +65,19 @@ export function layerPoseAt(id,time,{name='idle',phase,reduced=false,mobile=fals
  })};
 }
 export function createLayerAssetCache(createImage=()=>new Image()){
- const entries=new Map();
+ return layerCache(createCreatureImageCache({createImage}));
+}
+function layerCache(images){
  return {
   get(id){
    const rig=LAYER_RIGS[id];if(!rig||rig.quality!=='approved')return null;
-   if(!entries.has(id)){
-    const img=createImage(),entry={img,status:'loading'};entries.set(id,entry);
-    img.onload=()=>{entry.status='layered';};img.onerror=()=>{entry.status='fallback';};img.src=rig.src;
-   }
-   const entry=entries.get(id);return entry.status==='layered'?entry.img:null;
+   return images.get(rig.src,atlasBytes(rig.layers.map(layer=>layer.source)));
   },
-  status(id){return LAYER_RIGS[id]?(LAYER_RIGS[id].quality!=='approved'?'rework':entries.get(id)?.status??'loading'):'fallback';},
+  status(id){const rig=LAYER_RIGS[id];return !rig?'fallback':rig.quality!=='approved'?'rework':({ready:'layered',failed:'fallback',loading:'loading'})[images.status(rig.src)];},
+  clear:()=>images.clear(),
  };
 }
-const assets=createLayerAssetCache();
+const assets=layerCache(creatureImageCache);
 export const layerAssetStatus=id=>assets.status(id);
 export function drawLayeredCreature(ctx,id,{x=0,y=0,size=100,time=0,action={name:'idle'},mirror=false,reduced=false,mobile=false,getImage=key=>assets.get(key),getAttackImage=attackFrameImage,getActionImage=actionSequenceImage,onRepresentation=()=>{}}={}){
  const rig=LAYER_RIGS[id],sequence=ACTION_SEQUENCES[id]?.[action.name];

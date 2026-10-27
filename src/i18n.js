@@ -1,4 +1,6 @@
 import { SPECIES } from './data.js';
+import {deliveryMessages} from './horde-delivery-messages.js';
+import {journeyMessages} from './journey-collection-messages.js';
 
 export const messages = {
   'zh-CN': { hordeGrade:'通关评级',hordeMissionLabel:'本区目标：',hordeMissionsurvive:'存活60秒',hordeMissionelites:'击败精英',hordeMissionguardian:'击败守护者',hordeScoutWarning:'探索伙伴使危险预警延长 {seconds} 秒',hordeSupportHealing:'治疗',hordeSupportShield:'护盾',hordeSupportControl:'控制',hordePartnerContributionTitle:'伙伴战斗贡献',hordeUnattributed:'共享及环境伤害',hordeReportTime:'战斗时长',hordeReportDamage:'总伤害',hordeReportSignatures:'家族战技',hordeReportDodges:'躲避危险',hordeReportResonance:'元素共鸣',hordeReportSupport:'支援家族',familyTalentLabel:'家族天赋',familyScoutBenefit:'探索额外奖励',familySynergyTitle:'阵容羁绊',familySynergyInactive:'至少两名指定家族伙伴同时出战可激活',familySynergyGuide:'查看全部羁绊条件',familySynergyDamage:'伤害增益',familySynergyGuard:'减伤增益',familySynergyActive:'已激活',familySynergyPending:'未激活',dexResearchTitle:'图鉴研究奖励',dexResearchDesc:'发现更多不同形态，领取一次性研究补给。',dexResearchProgress:'发现 {total} / {count} 种',
@@ -23,7 +25,7 @@ export const messages = {
     theme: '界面主题', themeAuto: '跟随当前区域', themeDesc: '手动主题只改变界面色彩，战斗场景随区域切换。',
     autoExplore: '自动搜寻材料', autoExploreDesc: '灵感达到五份时，自动搜寻当前区域的进化材料。',
     autoHeal: '自动使用草露', autoHealDesc: '生命低于百分之三十五时，自动使用背包里的草露。',
-    offlineBlocked: '当前小队尚不能稳定战胜本区敌人，请先训练或返回较早区域。', ratesTitle: '放置收益预估', hourlyCoins: '离线每小时约 {coins} 星砂', offlineRatio: '离线按当前战力、无局内强化与无消耗品的稳定战斗估算，再按六成结算。无法稳定获胜时不产生资源。',
+    offlinePaused: '冒险已暂停，离线收益为零；营地采集与制作独立结算。', offlineBlocked: '当前小队低于本区离线战力门槛，请先训练或返回较早区域。', ratesTitle: '放置收益预估', hourlyCoins: '离线每小时约 {coins} 星砂', offlineRatio: '按当前区域、出战伙伴基础攻击和等级估算群潮清怪收益；暂停时为零，低于本区战力门槛不产生资源。预估与实际离线结算使用同一公式，不含局内强化、装备、职业、消耗品或首领奖励。',
     lowTide: '落潮', highTide: '涨潮',
     logDepth: '已调整为探索深度 {depth}，开始新一轮旅途',
     logGather: '在{region}搜寻到 {amount} 份生态材料', logRest: '小队驻足休整，生命与共鸣能量得到恢复',
@@ -90,13 +92,19 @@ Object.assign(messages['zh-CN'], {
   skillDescstrike:'9秒冷却，锁定近敌并溅射周围目标',
   skillDescring:'13秒冷却，范围伤害与减速',
   skillDescward:'17秒冷却，治疗并加护盾',
+  skillflameRush:'焰痕贯袭',skillfrostSnare:'霜域缚行',skillradiantAegis:'辉翼庇护',
+  skillDescflameRush:'焰尾狐系专属 · 蓄力{windup}秒后沿瞄准方向命中最多5敌人，造成{damage}%技能攻击伤害；冷却{seconds}秒。',
+  skillDescfrostSnare:'霜牙狼系专属 · 蓄力{windup}秒后造成{damage}%范围伤害，强减速{duration}秒：普通敌人移速35%，首领80%；冷却{seconds}秒。更强减速优先。',
+  skillDescradiantAegis:'光羽狮鹫系专属 · 蓄力{windup}秒后治疗小队{healing}%最大生命并增加{shield}%护盾，总盾上限16%；冷却{seconds}秒。',
+  familyActiveGuide:'家族专属技占用原主动槽，可替换通用技；先蓄力再生效，随家族天赋强化，控场/守护专精分别增强控制/护盾。换装保留冷却，空击不返冷却；离队或进化中断旧施法。',
+  skillWinding:'蓄力 {seconds}秒',
   skillfocus:'强攻铭文',skillfrost:'霜缚铭文',skillspark:'星火铭文',
   skillDescfocus:'主动攻击伤害提高25%',
   skillDescfrost:'被主动技触及的敌人减速2.25秒',
   skillDescspark:'主动施法后回复8点合击能量',
   skillSaved:'伙伴技能槽配置已保存',skillInvalid:'技能槽配置不合法',
   skillReady:'可施放',skillNotSet:'未装配',skillCooldown:'冷却 {seconds}秒',
-  skillCastSuccess:'伙伴主动技释放成功',skillCastBlocked:'无法释放：未装配、尚在冷却、战斗暂停或未进入范围。',
+  skillCastSuccess:'伙伴主动技已启动',skillCastBlocked:'无法释放：未装配、尚在冷却、战斗暂停或未进入范围。',
   // E2-A战斗专精与双元素共鸣，配套真实群潮精英敌人。
   combatTacticsTitle:'战技专精',combatTacticsHint:'三条专精路线 · 永久成长',
   combatTacticsIntro:'每位出战灵伴可选择一种战技发展方向，第一次确定免费，后续提升需星砂和对应生态进化材料。选定路线后暂不支持直接改选。',
@@ -314,7 +322,7 @@ Object.assign(messages['zh-CN'], {
   helpBattleDesc:'战场中同时存在多名敌人；小队自动游走与攻击。鼠标或触屏按住战场、方向键/WASD可临时指定移动方向，松开后恢复自动。原地防守按钮可锁定位置；空格暂停。',
   helpUpgradeDesc:'清理敌群获得局内经验，升级后三选一，当前有十种强化。默认约1.5秒自动选择第一项，也能关闭自动强化手动选择。',
   helpCaptureDesc:'将群潮中的普通灵伴生命降低至六成以下后使用共鸣符，成功后加入收藏，重复结契转为经验。星砂训练、12级与28级材料进化仍然有效。',
-  helpOfflineDesc:'离线最多8小时，暂按旧战力保守模型估算星砂、经验和材料；不会在离线期间获得新的结契、首领印记或稀有藏品。进度只保存在当前浏览器。',
+  helpOfflineDesc:'离开至少60秒才结算，最多8小时；按当前区域与出战伙伴基础攻击、等级估算群潮星砂、每名出战伙伴经验和生态材料，界面预估与结算共用公式。暂停或低于区域战力门槛时没有收益；不含装备、职业、局内强化与消耗品加成，不推进首领、结契或稀有收藏。结算后立即保存，进度仅在当前浏览器。',
   helpBossDesc:'群潮试炼约100秒后自动出现生态守护者，并继续保留少量小怪；红色范围圈代表即将发动的危险攻击，及时移动能避开。通关解锁下一生态。',
   autoUpgradeDesc:'局内升级后约1.5秒自动选择第一项，不长时间阻塞放置',
   bagDesc:'群潮每击退8只敌人结算1次冒险奖励，每3次奖励获得共鸣符，每12次奖励获得草露。',
@@ -325,12 +333,20 @@ Object.assign(messages['zh-CN'],{
  dexAnimationMode:'动作预览',dexPortraitMode:'二点五维立绘',
  dexAnimationHint:'点击伙伴可镜像 · 切换进化形态可比较动作节奏',
  dexActionidle:'待机',dexActionmove:'移动',dexActionattack:'攻击',dexActionhurt:'受伤',dexActioncast:'施法',
- dexArtkeyframes:'四个重绘攻击关键帧','dexArtmove-frames':'六帧独立步态序列','dexArthurt-frames':'四帧受伤与恢复姿态','dexArtcast-frames':'六帧蓄力、施法与收势',dexArtrework:'分层素材修整中 · 当前显示完整原画',dexArtlayered:'完整躯干与独立附件动画',dexArtfallback:'使用原PNG动画（该形态无可用分层素材）',
+ dexArtkeyframes:'四个重绘攻击关键帧','dexArtmove-frames':'六帧独立移动姿态','dexArthurt-frames':'四帧受伤与恢复姿态','dexArtcast-frames':'六帧蓄力、施法与收势',dexArtrework:'分层素材修整中 · 当前显示完整原画',dexArtlayered:'完整躯干与独立附件动画',dexArtfallback:'使用原PNG动画（该形态无可用分层素材）',
  dexArtloading:'分层部件加载中，暂用原PNG',dexArtunavailable:'原画暂不可用',
  dexArtportraitIdle:'待机使用完整原画 · 可切换重绘动作',dexArtsequenceFallback:'动作序列加载中或不可用 · 当前使用完整原画',dexArtsequenceReduced:'已减少动态 · 完整原画静止预览',
  dexAnimationActions:'伙伴动作',
 });
 const pairs = ['绒絨','团團','铃鈴','萤螢','鸣鳴','蹄蹄','窑窯','鳐鰩','帆帆','贝貝','眠眠','澄澄','鲸鯨','织織','姬姬','棱稜','伞傘','丝絲','纺紡','纸紙','鸢鳶','鹞鷂','辉輝','环環','轨軌','陆陸','谷谷','砂砂','砾礫','雾霧','惬愜','岭嶺','宝寶','龙龍','种種','龟龜','杰傑','喷噴','兽獸','绿綠','虫蟲','达達','纪紀','队隊','进進','设設','险險','图圖','鉴鑑','击擊','败敗','获獲','战戰','斗鬥','级級','经經','验驗','值值','币幣','灵靈','离離','线線','时時','间間','还還','会會','这這','个個','发發','现現','关關','闭閉','开開','启啟','动動','强強','选選','择擇','伤傷','药藥','复復','满滿','归歸','来來','欢歡','随隨','备備','份份','载載','导導','导導','入入','层層','属屬','阳陽','过過','树樹','梢梢','声聲','响響','见見','宁寧','静靜','湖湖','畔畔','锁鎖','拥擁','术術','术術','双雙','数數','总總','计計','录錄','称稱','暂暫','续續','对對','换換','页頁','显顯','示示','难難','与與','为為','从從','仅僅','实實','际際','准準','确確','证證','错錯','误誤','请請','无無','负負','载載','输輸','败敗','机機','遇遇','节節','园園','护護','卫衛','拥擁','装裝','远遠','挥揮','挥揮','体體','当當','尝嘗','试試','转轉','质質','减減','记記','响響','启啟','简簡','亚亞','旧舊','后後','么麼','术術','万萬','电電','风風','闪閃','烁爍','补補','划劃','刚剛','则則','断斷','让讓','尽盡','长長','处處','阳陽','于於','敌敵','认認','真真','钟鐘','个個','十十','百百','寻尋','览覽','览覽','浏瀏','网網','络絡','号號','顶頂','张張','华華','项項','类類','别別','总總','样樣','业業','区區','达達','条條','资資','据據','损損','赚賺','馈饋','邮郵','聪聰','宽寬','步步','阅閱','写寫','细細','细細','内內'];
+Object.assign(messages['zh-TW'],{
+ skillflameRush:'焰痕貫襲',skillfrostSnare:'霜域縛行',skillradiantAegis:'輝翼庇護',
+ skillDescflameRush:'焰尾狐系專屬 · 蓄力{windup}秒後沿瞄準方向命中最多5敵人，造成{damage}%技能攻擊傷害；冷卻{seconds}秒。',
+ skillDescfrostSnare:'霜牙狼系專屬 · 蓄力{windup}秒後造成{damage}%範圍傷害，強減速{duration}秒：普通敵人移速35%，首領80%；冷卻{seconds}秒。更強減速優先。',
+ skillDescradiantAegis:'光羽獅鷲系專屬 · 蓄力{windup}秒後治療小隊{healing}%最大生命並增加{shield}%護盾，總盾上限16%；冷卻{seconds}秒。',
+ familyActiveGuide:'家族專屬技佔用原主動槽，可替換通用技；先蓄力再生效，隨家族天賦強化，控場/守護專精分別增強控制/護盾。換裝保留冷卻，空擊不返冷卻；離隊或進化中斷舊施法。',
+});
+for(const locale of ['zh-CN','zh-TW'])Object.assign(messages[locale],journeyMessages[locale],deliveryMessages[locale]);
 const traditionalMap = Object.fromEntries(pairs.map(pair => [...pair]));
 function toTraditional(text) { return [...text].map(char => traditionalMap[char] ?? char).join(''); }
 export function t(key, params = {}, locale = 'zh-CN') {

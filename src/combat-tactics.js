@@ -1,4 +1,5 @@
 // E2永久战技与群潮元素共鸣，增益使用有限等级，不引入额外付费或独立假贴图。
+import {healParty,grantShield} from './horde-support-metrics.js';
 import {SPECIES} from './data.js';
 export const COMBAT_ROLES=Object.freeze({
   assault:{icon:'bolt',maxRank:3},control:{icon:'compass',maxRank:3},guardian:{icon:'shield',maxRank:3},
@@ -56,8 +57,8 @@ export function applyResonance(h,s,maxHp=0){
  if(!key)return null;
  if(key==='renewal'){
   // 固定上限和固定治疗，不依赖随机抽奖或页面刷新。
-  if(maxHp>0){s.partyHp=Math.min(maxHp,s.partyHp+maxHp*.035);
-    h.shieldPool=Math.min(maxHp*.16,h.shieldPool+maxHp*.015);}
+  if(maxHp>0){healParty(h,s,maxHp*.035,maxHp);
+    grantShield(h,maxHp*.015,maxHp*.16);}
  }else if(key==='blizzard'){
   for(const e of h.enemies)if(e.hp>0&&Math.hypot(e.x-h.hero.x,e.y-h.hero.y)<230)e.slow=Math.max(e.slow,3.4);
  }else if(key==='forge'){

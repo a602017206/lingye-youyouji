@@ -5,13 +5,15 @@ import { advanceHero, setHordeDirection as guide } from './horde-movement.js';
 import { teamMembers, creatureAttack, elementalMatch, maxPartyHp, heal, grantHordeMilestone, grantHordeGuardian, grantHordeCapture, addLog } from './engine.js';
 import { BOSS_STYLES, createBossWarnings, createEliteWarning, insideWarning } from './horde-boss.js';
 import {combatRole,roleAttackMultiplier,resonanceKey,applyResonance} from './combat-tactics.js';
-import {performActiveSkill} from './skill-loadouts.js';
+import {performActiveSkill,skillLoadout} from './skill-loadouts.js';
+import {initializeRunRelic,noteRelicDamage,relicWarningLead,relicShieldSpent,relicHitBonus,relicFieldKill,relicSafetyPulse,relicUltimate} from './horde-relics.js';
 import { guardianBonus } from './relics.js';
 import {familyTeamBonuses,combatSignature,familyTalent} from './family-talents.js';
 import {pushCombatText,advanceCombatText} from './combat-feedback.js';
 import {recordPartnerDamage} from './horde-contributions.js';
-import {recordCreatureCast,recordCreatureHit} from './creature-action-state.js';
-import {creditSupport} from './horde-support-metrics.js';
+import {recordCreatureCast,recordCreatureHit,creatureActionAt} from './creature-action-state.js';
+import {restoreFamilyCasts,resolveFamilyActives} from './family-active-skills.js';
+import {creditSupport,healParty,grantShield,takeHordeDamage,recordHealthLoss,recordDefeat} from './horde-support-metrics.js';
 import {markMovement} from './horde-training-lesson.js';
 import {familyFieldSupport} from './family-field-support.js';
 import {updateHordeDevices} from './horde-devices.js';
@@ -40,7 +42,7 @@ export function createHorde(state, snapshot=null, seed=712367) {
     const n=Math.min(3,camp.consumables[id]??0);
     supplies[id]=n;camp.consumables[id]-=n;
   }}
-  return {
+  const h={
     region:state.region, seed:(saved?.seed ?? seed)|0 || 1, elapsed:numeric(saved?.elapsed,0,600,0),
     enemies:[], projectiles:[], pulses:[], dangerMarkers:[], hero:{x:numeric(saved?.hero?.x,42,918,480),y:numeric(saved?.hero?.y,42,498,270)},
     manual:{x:0,y:0},moveMode:'auto', eliteCount:0,bossAttacks:0,regionClock:0,regenClock:0,eliteClock:0,
@@ -59,6 +61,10 @@ export function createHorde(state, snapshot=null, seed=712367) {
     supplies, supplySlots:{potion:saved?.supplySlots?.potion??camp.potionSlot,tool:saved?.supplySlots?.tool??camp.toolSlot},
     itemCooldowns:{potion:saved?.itemCooldowns?.potion??-100,tool:saved?.itemCooldowns?.tool??-100},suppliesReturned:!!saved?.suppliesReturned,
   };
+  restoreFamilyCasts(h,state,saved?.familyCasts);
+  initializeRunRelic(h,state,saved);
+  h.metricsSince=h.elapsed;
+  return h;
 }
 export function serializeHorde(h){
   return {region:h.region,seed:h.seed,elapsed:+h.elapsed.toFixed(3),kills:h.kills,packs:h.packs,
@@ -66,6 +72,8 @@ export function serializeHorde(h){
     rank:h.rank,xp:+h.xp.toFixed(3),upgrades:{...h.upgrades},pending:[...h.pending],
     bossStarted:h.bossStarted,finished:h.finished,heroHaste:+h.heroHaste.toFixed(2),resonanceTick:h.resonanceTick,
     shieldPool:+h.shieldPool.toFixed(2),activeCooldowns:{...h.activeCooldowns},
+    familyCasts:h.finished?[]:(h.familyCasts??[]).map(c=>({...c,origin:{...c.origin},aim:{...c.aim}})),
+    runRelic:h.runRelic??null,relicState:{...h.relicState},
     supplies:{...h.supplies},supplySlots:{...h.supplySlots},itemCooldowns:{...h.itemCooldowns},suppliesReturned:!!h.suppliesReturned};
 }
 function spawn(h,s,boss=false) {
@@ -95,15 +103,17 @@ function nearest(h,x,y,limit=550) {
   }
   return target;
 }
-function hit(h,e,damage,dx=0,dy=0,push=0,ownerId=null) {
+function hit(h,e,damage,dx=0,dy=0,push=0,ownerId=null,cap=false,kind=null) {
   if(e.hp<=0)return;
   const absorption=Math.min(.25, (e.shield??0)*.075);
   const bossBonus=(e.kind==='boss'||e.kind==='elite')?1+h.upgrades.focus*.14:1;
   const movingBonus=h.motionTime>0?1+h.upgrades.momentum*.075:1;
-  const applied=damage*(1-absorption)*bossBonus*movingBonus;
-  e.hp=Math.max(0,e.hp-applied); e.flash=0.15; h.combatDamage+=applied;
-  if(ownerId){recordPartnerDamage(h,ownerId,applied);recordCreatureHit(h,e,ownerId);}
-  if(applied>=1)pushCombatText(h,{x:e.x,y:e.y-22,value:applied});
+  const base=damage*(1-absorption)*bossBonus*movingBonus,raw=base+relicHitBonus(h,e,base),applied=cap?Math.min(e.hp,raw):raw;
+  const actual=Math.min(e.hp,applied);
+  e.hp=Math.max(0,e.hp-applied); e.flash=0.15; h.combatDamage+=actual;
+  if(e.hp<=0)e.deathKind=kind;
+  if(ownerId){recordPartnerDamage(h,ownerId,actual);recordCreatureHit(h,e,ownerId);}
+  if(actual>=1)pushCombatText(h,{x:e.x,y:e.y-22,value:actual});
   if(h.upgrades.ember>0){e.burn=Math.max(e.burn??0,1.6+h.upgrades.ember*.55);h.effectsApplied++;}
   if(h.upgrades.frostbite>0){e.slow=Math.max(e.slow,1+h.upgrades.frostbite*.45);h.effectsApplied++;}
   if(h.upgrades.spores>0){e.spore=Math.max(e.spore??0,2+h.upgrades.spores*.6);h.effectsApplied++;}
@@ -125,11 +135,11 @@ function triggerFamilySignature(h,s,p,count,attack){
  if(action==='flame')for(const e of foes.filter(e=>distance(e,h.hero)<170))strike(e,attack*.16*strength);
  if(action==='chain')for(const e of foes.slice(0,3)){strike(e,attack*.19*strength);e.slow=Math.max(e.slow,1.1*strength);}
  if(action==='freeze')for(const e of foes.filter(e=>distance(e,h.hero)<195)){e.slow=Math.max(e.slow,2.1*strength);creditSupport(h,p.id,'control',1);}
- if(action==='bulwark'){const before=h.shieldPool;h.shieldPool=Math.min(hp*.16,h.shieldPool+hp*.018*strength);creditSupport(h,p.id,'shield',h.shieldPool-before);}
+ if(action==='bulwark')grantShield(h,hp*.018*strength,hp*.16,p.id);
  if(action==='tideSlash')for(const e of foes.filter(e=>distance(e,h.hero)<220).slice(0,5))strike(e,attack*.24*strength);
- if(action==='sunHeal'){const before=s.partyHp;s.partyHp=Math.min(hp,s.partyHp+hp*.012*strength);creditSupport(h,p.id,'healing',s.partyHp-before);}
+ if(action==='sunHeal')healParty(h,s,hp*.012*strength,hp,p.id);
  if(action==='shadowStrike')strike(primary,attack*.65*strength);
- if(action==='starShield'){const before=h.shieldPool;h.shieldPool=Math.min(hp*.16,h.shieldPool+hp*.014*strength);creditSupport(h,p.id,'shield',h.shieldPool-before);strike(primary,attack*.19*strength);}
+ if(action==='starShield'){grantShield(h,hp*.014*strength,hp*.16,p.id);strike(primary,attack*.19*strength);}
  if(action==='venom')for(const e of foes.slice(0,4)){strike(e,attack*.12*strength);e.spore=Math.max(e.spore??0,2*strength);}
  if(action==='ironPush')for(const e of foes.filter(e=>distance(e,h.hero)<140)){strike(e,attack*.14*strength);const dx=e.x-h.hero.x,dy=e.y-h.hero.y,length=Math.max(1,Math.hypot(dx,dy));e.x=clamp(e.x+dx/length*25*strength,-35,HORDE_WIDTH+35);e.y=clamp(e.y+dy/length*25*strength,-35,HORDE_HEIGHT+35);}
  h.pulses.push({x:h.hero.x,y:h.hero.y,radius:130,life:.55,max:.55,kind:'familySignature',action,color:SPECIES[p.species].type});
@@ -151,7 +161,7 @@ function addExperience(h,value) {
   }
 }
 export function finishHordePack(h,s,boss=false){
-  if(boss){ h.bossCleared=true;h.finished=true;grantHordeGuardian(s);return;}
+  if(boss){ h.bossCleared=true;h.finished=true;h.familyCasts=[];grantHordeGuardian(s);return;}
   h.kills++;
   addExperience(h,1);
   if(h.kills%8!==0)return;
@@ -161,13 +171,14 @@ export function finishHordePack(h,s,boss=false){
 }
 function cast(h,s,index){
   const allies=teamMembers(s), p=allies[index];if(!p)return;
+  if(creatureActionAt(h,p.id).skill)return;
   const mode=SPECIES[p.species].family%3;
   const attacking=SPECIES[p.species];
   const foe=nearest(h,h.hero.x,h.hero.y,540);
   const baseMatch=foe?elementalMatch(attacking,SPECIES[foe.species]):1;
   const specialty=combatRole(s,p.id);
   const attack=creatureAttack(p,s)*(1+familyTeamBonuses(s).damage)*.92*(1+h.upgrades.echo*.075)*baseMatch*trainingMultiplier(s,p.id,'element')*guardianBonus(s,h.region)*roleAttackMultiplier(s,p.id);
-  if(specialty.role==='guardian')h.shieldPool=Math.min(maxPartyHp(s)*.16,h.shieldPool+maxPartyHp(s)*.004*specialty.rank);
+  if(specialty.role==='guardian')grantShield(h,maxPartyHp(s)*.004*specialty.rank,maxPartyHp(s)*.16,p.id);
   const angles=[-0.9,1.8,0.65],ox=h.hero.x+Math.cos(angles[index])*39,oy=h.hero.y+Math.sin(angles[index])*32;
   const target=nearest(h,ox,oy,500);
   h.skillCasts[index]++;
@@ -187,7 +198,7 @@ function cast(h,s,index){
   } else if(mode===1){ // 环状范围技，近身敌人同时受伤
     const radius=145+h.upgrades.orbit*17;
     for(const e of h.enemies) if(distance(e,h.hero)<radius+e.r){
-      hit(h,e,attack*.75*(1+h.upgrades.orbit*.16),e.x-h.hero.x,e.y-h.hero.y,-h.upgrades.gravity*6,p.id);
+      hit(h,e,attack*.75*(1+h.upgrades.orbit*.16),e.x-h.hero.x,e.y-h.hero.y,-h.upgrades.gravity*6,p.id,false,'field');
     }
     h.pulses.push({x:h.hero.x,y:h.hero.y,radius,life:0.45,max:0.45,kind:'orbit',color:attacking.secondaryType??attacking.type});
   } else { // 扇形冲击波，击退多个敌人
@@ -204,9 +215,10 @@ function cast(h,s,index){
 export function castHordeActive(h,s,id){
  const p=teamMembers(s).find(member=>member.id===id);
  if(!p)return false;
- const attack=creatureAttack(p,s)*trainingMultiplier(s,p.id,'element')*guardianBonus(s,h.region)*roleAttackMultiplier(s,p.id);
- return performActiveSkill(h,s,p,(e,damage,dx,dy,push)=>hit(h,e,damage,dx,dy,push,p.id),attack,maxPartyHp(s));
+ const attack=activeAttack(s,h,p);
+ return performActiveSkill(h,s,p,(e,damage,dx,dy,push)=>hit(h,e,damage,dx,dy,push,p.id,false,skillLoadout(s,p.id).active==='ring'?'field':null),attack,maxPartyHp(s));
 }
+function activeAttack(s,h,p){return creatureAttack(p,s)*trainingMultiplier(s,p.id,'element')*guardianBonus(s,h.region)*roleAttackMultiplier(s,p.id);}
 export function triggerHordePulse(h,s) {
   if(!s.running || h.finished || s.energy<100 || h.pending.length)return false;
   s.energy=0;
@@ -214,6 +226,7 @@ export function triggerHordePulse(h,s) {
   for(const e of h.enemies)if(distance(e,h.hero)<340+e.r){
     hit(h,e,power*3.6,e.x-h.hero.x,e.y-h.hero.y,66);
   }
+  relicUltimate(h,power);
   h.pulses.push({x:h.hero.x,y:h.hero.y,radius:340,life:.6,max:.6,kind:'ultimate'});
   addLog(s,'logUltimate');return true;
 }
@@ -246,9 +259,9 @@ function regionEffect(h,s,dt){
   const adapted=teamMembers(s).some(p=>SPECIES[p.species].region===h.region);
   if(h.regenClock<1)return;
   h.regenClock-=1;
-  if(h.region===0)s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*.003);
-  if(h.upgrades.regen>0)s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*Math.min(.014,h.upgrades.regen*.002));
-  if(h.upgrades.bulwark>0&&h.upgrades.regen>0)h.shieldPool=Math.min(maxPartyHp(s)*.15,h.shieldPool+maxPartyHp(s)*.001);
+  if(h.region===0)healParty(h,s,maxPartyHp(s)*.003,maxPartyHp(s));
+  if(h.upgrades.regen>0)healParty(h,s,maxPartyHp(s)*Math.min(.014,h.upgrades.regen*.002),maxPartyHp(s));
+  if(h.upgrades.bulwark>0&&h.upgrades.regen>0)grantShield(h,maxPartyHp(s)*.001,maxPartyHp(s)*.15);
   if(h.upgrades.awakeningVortex>0){
     h.vortexClock+=1;
     if(h.vortexClock>=4){h.vortexClock=0;
@@ -259,7 +272,10 @@ function regionEffect(h,s,dt){
   }
   if(h.region===2)s.energy=Math.min(100,s.energy+(Math.floor(h.elapsed/12)%2===0?3:1));
   if(h.region===3)for(const e of h.enemies)if(distance(e,h.hero)<120)e.slow=Math.max(e.slow,.7);
-  if(h.region===4) s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*(adapted?.004:-.006));
+  if(h.region===4){
+    if(adapted)healParty(h,s,maxPartyHp(s)*.004,maxPartyHp(s));
+    else{const before=s.partyHp;s.partyHp=Math.min(maxPartyHp(s),s.partyHp-maxPartyHp(s)*.006);recordHealthLoss(h,before,s.partyHp,'ecology');}
+  }
   if(h.region===5)for(const e of h.enemies)if(e.kind==='boss'||e.kind==='elite')e.shield=Math.min(3,(e.shield||0)+.5);
 }
 function spawnWarning(h,s,e) {
@@ -272,14 +288,14 @@ function spawnWarning(h,s,e) {
   if(e.kind==='boss')h.bossAttacks++;
 }
 function resolveWarnings(h,s,dt) {
-  const lead=scoutWarningLead(s);
+  const lead=Math.min(.8,scoutWarningLead(s)+relicWarningLead(h));
   for(const mark of h.dangerMarkers){
     if(lead>0&&!mark.scoutEnhanced){mark.life+=lead;mark.max+=lead;mark.scoutEnhanced=true;}
     mark.life-=dt;
     if(mark.life<=0&&insideWarning(mark,h.hero)) {
       const damage=Math.min(mark.damage,maxPartyHp(s)*.12);
-      const shielded=Math.min(h.shieldPool,damage);h.shieldPool-=shielded;
-      s.partyHp-=damage-shielded;
+      const previousShield=h.shieldPool;takeHordeDamage(h,s,damage,mark.source==='boss'?'bossWarning':'eliteWarning');
+      noteRelicDamage(h,damage);relicShieldSpent(h,s,previousShield);
       if(mark.status==='spore')h.heroSlow=Math.max(h.heroSlow,2.4);
       h.impact=.25;
     }
@@ -293,9 +309,9 @@ export function useHordeSupply(h,s,slot){
   const id=h.supplySlots?.[slot];
   if(!id||(h.supplies[id]??0)<1||h.elapsed-(h.itemCooldowns[slot]??-100)<(slot==='potion'?30:40))return false;
   if(slot==='potion'&&s.partyHp>=maxPartyHp(s))return false;
-  if(id==='herbalPotion')s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*.25);
-  else if(id==='recoveryDraught')s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*.30);
-  else if(id==='fortifiedDraught')s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*.35);
+  if(id==='herbalPotion')healParty(h,s,maxPartyHp(s)*.25,maxPartyHp(s));
+  else if(id==='recoveryDraught')healParty(h,s,maxPartyHp(s)*.30,maxPartyHp(s));
+  else if(id==='fortifiedDraught')healParty(h,s,maxPartyHp(s)*.35,maxPartyHp(s));
   else if(id==='repelVial'||id==='reinforcedDisc'){
     for(const e of h.enemies)if(e.hp>0&&distance(e,h.hero)<240){
       const dx=e.x-h.hero.x,dy=e.y-h.hero.y;
@@ -316,7 +332,8 @@ export function returnUnusedSupplies(h,s){
   h.suppliesReturned=true;return true;
 }
 export function stepHorde(h,s,dt=1/30){
-  if(!s.running||h.finished||h.region!==s.region)return;
+  if(h.finished||h.region!==s.region){h.familyCasts=[];return;}
+  if(!s.running)return;
   dt=clamp(dt,0,1/15);
   if(h.pending.length) {
     if(s.settings.autoUpgrade){h.autoChoice+=dt;if(h.autoChoice>=1.5)chooseHordeUpgrade(h,h.pending[0]);}
@@ -324,6 +341,7 @@ export function stepHorde(h,s,dt=1/30){
   }
   h.elapsed+=dt;
   advanceCombatText(h,dt);
+  resolveFamilyActives(h,s,(ownerId,e,damage)=>hit(h,e,damage,0,0,0,ownerId,true),p=>activeAttack(s,h,p),maxPartyHp(s));
   if(s.camp?.autoActiveSkills){
     for(const p of teamMembers(s))castHordeActive(h,s,p.id);
   }
@@ -336,7 +354,7 @@ export function stepHorde(h,s,dt=1/30){
   updateHordeDevices(h,s,dt,maxPartyHp(s));
   const oldX=h.hero.x,oldY=h.hero.y;
   // 无法击败守护者的试炼在十分钟时安全撤离，避免快照无限增长而失效。
-  if(h.elapsed>=590){h.finished=true;h.defeated=true;h.notice='timeout';addLog(s,'logDefeat');returnUnusedSupplies(h,s);return;}
+  if(h.elapsed>=590){recordDefeat(h,'timeout');h.finished=true;h.familyCasts=[];h.defeated=true;h.notice='timeout';addLog(s,'logDefeat');returnUnusedSupplies(h,s);return;}
   h.heroSlow=Math.max(0,h.heroSlow-dt);
   h.heroHaste=Math.max(0,h.heroHaste-dt);
   advanceHero(h,dt);
@@ -350,7 +368,7 @@ export function stepHorde(h,s,dt=1/30){
   for(const p of h.pulses)p.life-=dt;
   h.pulses=h.pulses.filter(p=>p.life>0);
   for(const e of h.enemies){
-    e.flash=Math.max(0,e.flash-dt);e.hitCooldown=Math.max(0,e.hitCooldown-dt);e.slow=Math.max(0,e.slow-dt);
+    e.flash=Math.max(0,e.flash-dt);e.hitCooldown=Math.max(0,e.hitCooldown-dt);e.slow=Math.max(0,e.slow-dt);e.snare=Math.max(0,(e.snare??0)-dt);
     const dot=((e.burn??0)>0?h.upgrades.ember*3:0)+((e.spore??0)>0?h.upgrades.spores*2.8:0);
     if(dot>0){const applied=Math.min(e.hp,dot*dt);e.hp-=applied;h.combatDamage+=applied;}
     e.burn=Math.max(0,(e.burn??0)-dt);e.spore=Math.max(0,(e.spore??0)-dt);
@@ -365,6 +383,7 @@ export function stepHorde(h,s,dt=1/30){
     h.spawnClock=(h.bossStarted?1.25:Math.max(.19,.76-h.elapsed*.004))*(.75+rand(h)*.5);
   }
   for(const e of h.enemies){
+    if(e.hp<=0)continue;
     const dx=h.hero.x-e.x,dy=h.hero.y-e.y,len=Math.max(1,Math.hypot(dx,dy));
     const gap=e.kind==='boss'?72:e.kind==='elite'?56:43;
     if((e.kind==='boss'||e.kind==='elite')&&e.hp>0){
@@ -380,7 +399,8 @@ export function stepHorde(h,s,dt=1/30){
       }
     }
     if(len>gap){
-      const speed=e.speed*challengeTier(h).speed*(e.slow>0?.65:1)*(h.region===2&&Math.floor(h.elapsed/6)%2===1?1.14:1);
+      const slow=Math.min(e.snare>0?(e.kind==='boss'?.8:.35):1,e.slow>0?.65:1);
+      const speed=e.speed*challengeTier(h).speed*slow*(h.region===2&&Math.floor(h.elapsed/6)%2===1?1.14:1);
       e.x+=dx/len*speed*dt;e.y+=dy/len*speed*dt;
     } else if(e.hitCooldown<=0){
       // 同时近身的群怪共享秒级伤害预算，不会因实体叠身瞬间秒杀。
@@ -390,14 +410,14 @@ export function stepHorde(h,s,dt=1/30){
       const first=teamMembers(s)[0];
       const match=first?elementalMatch(SPECIES[e.species],SPECIES[first.species]):1;
       const damage=Math.min(e.attack*challengeTier(h).attack*(1-h.upgrades.guard*.055)*(1-familyTeamBonuses(s).guard)*(1-fieldSupport.shield)*(1-fieldSupport.vision)*regionPressure*Math.max(.8,Math.min(1.2,match)),Math.max(0,budget-h.contactDamage));
-      const shielded=Math.min(h.shieldPool,damage);h.shieldPool-=shielded;
-      s.partyHp-=damage-shielded;h.contactDamage+=damage;
+      const previousShield=h.shieldPool;takeHordeDamage(h,s,damage,'contact');
+      h.contactDamage+=damage;noteRelicDamage(h,damage);relicShieldSpent(h,s,previousShield);
       e.hitCooldown=e.kind==='boss'?1.15:1.55;
       if(damage>0)h.impact=.25;
     }
   }
   for(let i=0;i<3;i++){
-    if(!teamMembers(s)[i])continue;
+    const member=teamMembers(s)[i];if(!member||creatureActionAt(h,member.id).skill)continue;
     h.timers[i]-=dt;
     if(h.timers[i]<=0){
       cast(h,s,i);
@@ -406,6 +426,10 @@ export function stepHorde(h,s,dt=1/30){
     }
   }
   for(const bullet of h.projectiles) {
+    if(bullet.relic){
+      const target=h.enemies.find(e=>e.id===bullet.targetId&&e.hp>0)??nearest(h,bullet.x,bullet.y,500);
+      if(target){const angle=Math.atan2(target.y-bullet.y,target.x-bullet.x);bullet.targetId=target.id;bullet.vx=Math.cos(angle)*500;bullet.vy=Math.sin(angle)*500;}
+    }
     bullet.x+=bullet.vx*dt;bullet.y+=bullet.vy*dt;bullet.life-=dt;
     if(bullet.life<=0)continue;
     for(const e of h.enemies){
@@ -437,6 +461,7 @@ export function stepHorde(h,s,dt=1/30){
   h.enemies=h.enemies.filter(e=>e.hp>0);
   for(const e of dead) {
     if(e.kind==='boss'){finishHordePack(h,s,true);break;}
+    const relicXp=relicFieldKill(h,e);if(relicXp)addExperience(h,relicXp);
     if(h.upgrades.burst>0){
       const radius=60+h.upgrades.burst*13+(h.upgrades.awakeningNova?50:0)+(h.upgrades.ember?12:0);
       const bonus=18+h.upgrades.burst*13+(h.upgrades.awakeningNova?23:0)+(h.upgrades.ember?8:0);
@@ -444,9 +469,9 @@ export function stepHorde(h,s,dt=1/30){
       h.pulses.push({x:e.x,y:e.y,radius,life:.34,max:.34,kind:'burst'});
     }
     if(h.upgrades.vampire>0&&(h.kills+1)%6===0){
-      s.partyHp=Math.min(maxPartyHp(s),s.partyHp+maxPartyHp(s)*h.upgrades.vampire*.008);
+      healParty(h,s,maxPartyHp(s)*h.upgrades.vampire*.008,maxPartyHp(s));
     }
-    if(h.upgrades.bulwark>0)h.shieldPool=Math.min(maxPartyHp(s)*.15,h.shieldPool+maxPartyHp(s)*.002*h.upgrades.bulwark);
+    if(h.upgrades.bulwark>0)grantShield(h,maxPartyHp(s)*.002*h.upgrades.bulwark,maxPartyHp(s)*.15);
     if(e.kind==='elite'){
       s.materials[s.region]=Math.min(1e12,s.materials[s.region]+2);
       s.energy=Math.min(100,s.energy+10);
@@ -458,10 +483,12 @@ export function stepHorde(h,s,dt=1/30){
     // 群潮战斗与现有生态材料循环兼容。
     s.scoutEnergy-=5;s.materials[s.region]+=3+s.depths[s.region];
   }
-  if(s.settings.autoHeal&&s.partyHp>0&&s.partyHp<maxPartyHp(s)*.35)heal(s);
+  if(s.settings.autoHeal&&s.partyHp>0&&s.partyHp<maxPartyHp(s)*.35){const before=s.partyHp;heal(s);creditSupport(h,null,'healing',s.partyHp-before);}
+  if(s.partyHp>0&&!h.finished)relicSafetyPulse(h,s,maxPartyHp(s));
   if(s.partyHp<=0) {
+    recordDefeat(h);
     s.partyHp=maxPartyHp(s);s.energy=0;s.wins=0;
-    h.finished=true;h.defeated=true;h.notice='defeat';addLog(s,'logDefeat');
+    h.finished=true;h.familyCasts=[];h.defeated=true;h.notice='defeat';addLog(s,'logDefeat');
   }
   if(h.finished)returnUnusedSupplies(h,s);
 }

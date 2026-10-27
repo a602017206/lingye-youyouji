@@ -1,4 +1,4 @@
-/* 新营地：轻量绘本卡片，手机纵向布局；尚无独立建筑贴图，使用现有UI图标。 */
+/* 营地：轻量绘本卡片，手机纵向布局；已接入4建筑与8道具独立PNG，未完成槽位保留界面图标。 */
 
 /* D2-B：仅在提供了通过验收的独立PNG时显示正式图像，不用拼贴图。 */
 .camp-original-item-icon{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
@@ -163,3 +163,23 @@
 .horde-supplies button:disabled{opacity:.48;cursor:not-allowed}
 .horde-supplies small{font-size:10px;color:var(--theme-muted)}
 @media(max-width:760px){.camp-recipe-grid{grid-template-columns:1fr}.camp-inventory{grid-template-columns:repeat(2,minmax(0,1fr))}.camp-section{padding:12px}.camp-assign-controls{gap:8px}.camp-assign-controls label{flex-basis:40%;min-width:0}.camp-assign-controls button{width:100%}.camp-overview{padding:12px}.camp-overview-title strong{font-size:14px}.camp-job-card>.creature{width:52px;height:52px}}
+
+/* 首批独立营地原画：保留透明留白和完整轮廓，失败时展示原有界面图标。 */
+.camp-art{display:block;width:100%;height:100%;position:relative;flex:none}
+.camp-art-fallback{width:100%;height:100%;place-items:center}
+.camp-art-fallback:not([hidden]){display:grid}
+.camp-art [hidden]{display:none!important}
+.camp-scene-map{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;padding-top:15px}
+.camp-scene-marker{min-width:0;flex-direction:column;background:rgba(31,51,35,.55)}
+.camp-scene-marker .camp-building-art{width:100%;height:128px;display:block}
+.camp-building-art .camp-original-item-icon{filter:drop-shadow(0 6px 4px #10281b80)}
+.camp-scene-marker>span:last-child{white-space:normal;text-align:center;line-height:1.5}
+.c5-facility-sign{width:86px;height:86px;border:0;background:transparent}
+.camp-supply-icon{width:58px;height:58px}
+.camp-recipe>header{flex-wrap:wrap;justify-content:flex-start}
+.camp-recipe>header>strong{flex:1;min-width:90px}
+.camp-loadout-preview{display:flex;align-items:center;gap:8px}
+.camp-loadout-preview .camp-art{width:44px;height:44px}
+.horde-supply-art{display:block;width:30px;height:30px;flex:none}
+@media(max-width:700px){.camp-scene-map{grid-template-columns:repeat(2,minmax(0,1fr));padding-top:16px}.camp-scene-marker .camp-building-art{height:112px}}
+@media(max-width:520px){.c5-facility{flex-wrap:wrap}.c5-facility-sign{width:80px;height:80px}.c5-facility button{min-height:44px;margin-left:auto}.camp-recipe-actions button{min-height:44px}}

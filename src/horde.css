@@ -105,3 +105,19 @@
 }
 @media(max-width:420px){.horde-stage{height:340px!important}.horde-pill{font-size:8px}.horde-bottom>span{font-size:8px}.horde-options button{min-height:130px}}
 @media(prefers-reduced-motion:reduce){.horde-xp-track>div{transition:none}}
+
+/* 战后生存账本保留实际值；手机按自然行换行，避免贡献列表遮挡操作。 */
+.horde-sustain-report{padding:12px;border:1px solid var(--theme-line);border-radius:12px;margin:12px 0;background:var(--theme-soft);text-align:left}
+.horde-sustain-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0;font-size:12px}
+.horde-sustain-report small,.horde-report-scope{font-size:10px;line-height:1.7;color:var(--theme-muted)}
+.horde-death-reason{font-size:12px;line-height:1.7;color:var(--theme-ink);overflow-wrap:anywhere}
+.horde-report-contributions article{border-top:1px solid var(--theme-line);padding:8px 0;font-size:11px;min-width:0}
+.horde-report-contributions article div{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:5px}
+.horde-report-contributions article span{font-size:10px;line-height:1.6}
+/* 长报告放在战场下方正常文档流，完整内容及重试按钮不受画布裁切。 */
+.horde-result-panel{padding:18px;margin:12px 0;background:var(--theme-panel);color:var(--theme-ink);border:1px solid var(--theme-line);border-radius:15px;min-width:0}
+.horde-result-panel[hidden]{display:none!important}
+.horde-result-panel h2{font-size:20px;margin:0 0 8px;color:var(--theme-ink)}
+.horde-result-panel>p{font-size:12px;line-height:1.7}
+.horde-result-panel .horde-report{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:11px}
+.horde-result-panel>.primary-button{min-height:44px;margin-top:12px}

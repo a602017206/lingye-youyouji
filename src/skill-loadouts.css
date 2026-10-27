@@ -17,6 +17,7 @@
 .skill-slot-choice .icon{width:17px;height:17px;flex:none}
 .skill-slot-choice strong{font-size:10px;white-space:nowrap}
 .skill-slot-choice small{flex-basis:100%;font-size:9px;line-height:1.4;color:var(--theme-muted);text-align:center}
+.family-active-guide{font-size:11px;line-height:1.7;color:var(--theme-muted);margin:8px 0}
 .skill-slot-choice:focus-visible{outline:2px solid var(--theme-ink);outline-offset:2px}
 .horde-active-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:9px 0}
 .horde-active-actions button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;min-height:54px;border-radius:10px;font-size:11px}

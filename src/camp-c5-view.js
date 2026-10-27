@@ -1,4 +1,4 @@
-// C5生产设施和高级自动化面板，复用真实林地背景，不使用不存在的建筑贴图。
+// C5生产设施和高级自动化面板，场景和升级卡共用已验收的独立建筑PNG。
 import { REGIONS } from './data.js';
 import { CAMP_RECIPES,CAMP_FACILITIES } from './camp-data.js';
 import { craftPlanStatus } from './camp-engine.js';
@@ -20,7 +20,7 @@ export function campC5View(s,tr,icon){
  return '<section class="camp-scene" aria-label="'+tr('c5SceneTitle')+'" style="--camp-landscape:url(\''+REGIONS[0].background+'\')">'
   +'<div class="camp-scene-head"><div><span class="camp-scene-overline">'+tr('c5Chapter')+'</span><h2>'+tr('c5SceneTitle')+'</h2><p>'+tr('c5SceneDesc')+'</p></div>'
   +'<div class="camp-scene-stats"><span>'+tr('campLevel',{level:c.level})+'</span><strong>'+Object.values(facilities).reduce((a,b)=>a+b,0)+' / 12</strong><small>'+tr('c5Construction')+'</small></div></div>'
-  +'<div class="camp-scene-map">'+Object.entries(CAMP_FACILITIES).map(([id,f],i)=>'<a class="camp-scene-marker camp-marker-'+id+'" href="#camp-c5-facilities">'+icon(f.icon)+'<span>'+tr('c5Facility'+id)+' · '+facilities[id]+'</span></a>').join('')+'</div>'
+  +'<div class="camp-scene-map">'+Object.entries(CAMP_FACILITIES).map(([id,f])=>'<a class="camp-scene-marker camp-marker-'+id+'" href="#camp-c5-facilities"><span class="camp-building-art">'+itemIcon('facilities',id,icon,f.icon)+'</span><span>'+tr('c5Facility'+id)+' · '+facilities[id]+'</span></a>').join('')+'</div>'
   +'</section>'
   +'<section class="camp-section camp-c5" id="camp-c5-facilities"><div class="section-heading"><h2>'+icon('shield')+tr('c5FacilitiesTitle')+'</h2><small>'+tr('c5FacilitiesHint')+'</small></div>'
   +'<div class="c5-facilities-grid">'+setup+'</div></section>'
