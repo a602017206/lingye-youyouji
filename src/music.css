@@ -1,0 +1,13 @@
+.music-button{flex-shrink:0}
+.music-button.music-on{color:var(--theme-accent);background:var(--theme-soft)}
+.music-button[data-status="error"]{color:#9a6935}
+.music-volume-control{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.settings-row .music-volume-control input[type="range"]{appearance:auto;width:118px;height:24px;border-radius:0;background:transparent;accent-color:var(--theme-accent)}
+.settings-row .music-volume-control input[type="range"]:before{display:none}
+.music-volume-control output{min-width:34px;text-align:right;font-size:11px;color:var(--theme-muted)}
+.music-status-row{display:flex;align-items:center;gap:12px;margin-top:12px;min-height:26px}
+.music-status-row p,.music-origin{font-size:10px;line-height:1.8;color:var(--theme-muted)}
+.music-status-row .text-button{flex-shrink:0;font-size:10px}
+.music-status-row [hidden]{display:none}
+.music-origin{margin-top:6px}
+@media(max-width:760px){.topbar .music-button{width:29px;height:29px}.topbar{gap:6px}.music-volume-row{flex-wrap:wrap;gap:8px}.music-volume-control{width:100%}.settings-row .music-volume-control input[type="range"]{width:auto;min-width:0;flex:1}.music-status-row{flex-wrap:wrap}}

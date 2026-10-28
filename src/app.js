@@ -29,6 +29,8 @@ import {startAdventureRoute,chooseAdventurePath,claimAdventureRoute,abortAdventu
 import { chooseCombatRole } from './combat-tactics.js';
 import { setSkillSlot } from './skill-loadouts.js';
 import {trainCareer} from './partner-careers.js';
+import {createMusicPlayer,musicTrackFor} from './background-music.js';
+import {musicSettingsMarkup,updateMusicControls} from './music-view.js';
 
 const paths = {
   leaf: '<path d="M20 4C10 2 3 7 5 16c7 3 15-2 15-12Z"/><path d="m4 21 11-11"/>',
@@ -88,6 +90,15 @@ let lastSaved = Date.now();
 let saveHealthy=loaded.state&&!bootChanged?true:writeSaveDetailed(state).ok;
 const $ = selector => document.querySelector(selector);
 const tr = (key, params = {}) => t(key, params, state.settings.locale);
+const music = createMusicPlayer({
+  createAudio: () => {
+    const audio = document.createElement('audio');
+    audio.id = 'background-music-audio'; audio.hidden = true;
+    document.body.append(audio); return audio;
+  },
+  onChange: value => updateMusicControls(value,tr),
+});
+function syncMusic() { music.select(musicTrackFor(page,horde,!!document.querySelector('#standalone-training'))); }
 const name = id => creatureName(id, state.settings.locale);
 const num = n => Math.floor(n).toLocaleString(state.settings.locale);
 const img = (id, cls = '') => sprite(id)
@@ -124,11 +135,12 @@ function shell() {
       <div class="sidebar-bottom"><div class="camp-note"><span class="little-leaf">${icon('leaf')}</span><strong>${tr('notice')}</strong><p>${tr('tip')}</p><span class="note-dots">· · ·</span></div><button class="nav-item" data-action="guide">${icon('help')}${tr('guide')}</button><button class="nav-item" data-action="settings">${icon('settings')}${tr('settings')}</button><div class="sidebar-footer"><span class="status-dot"></span>${tr('local')}</div></div>
     </aside>
     <div class="app-body">
-      <header class="topbar"><div class="trainer"><div class="trainer-avatar">${img(101)}</div><div><strong>${tr('trainerName')}<span class="trainer-tag">${tr('trainer')}</span></strong><small>${tr('greeting')} ${icon('sun')}</small></div></div><div class="resources" id="resources"></div><button class="icon-button save-button" data-action="save" title="${tr('save')}" aria-label="${tr('save')}">${icon('save')}</button><button class="icon-button mobile-settings" data-action="settings" title="${tr('settings')}" aria-label="${tr('settings')}">${icon('settings')}</button></header>
+      <header class="topbar"><div class="trainer"><div class="trainer-avatar">${img(101)}</div><div><strong>${tr('trainerName')}<span class="trainer-tag">${tr('trainer')}</span></strong><small>${tr('greeting')} ${icon('sun')}</small></div></div><div class="resources" id="resources"></div><button class="icon-button music-button" data-action="music-toggle" aria-label="${tr('musicEnable')}"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></button><button class="icon-button save-button" data-action="save" title="${tr('save')}" aria-label="${tr('save')}">${icon('save')}</button><button class="icon-button mobile-settings" data-action="settings" title="${tr('settings')}" aria-label="${tr('settings')}">${icon('settings')}</button></header>
       <main class="layout"><section class="workspace"><div id="page-heading"></div><div id="page-content"></div></section><aside class="team-column" id="team-panel"></aside></main>
       <footer class="app-footer"><span>${icon('leaf')}${tr('footerTip')}</span><span id="save-status"></span></footer>
     </div>`;
   renderPage();
+  syncMusic(); updateMusicControls(music.snapshot(),tr);
 }
 function heading(title, subtitle, eyebrow) {
   return `<div class="page-heading"><div><div class="eyebrow">${icon('compass')}${eyebrow ?? tr('today')}</div><h1>${title}</h1><p>${subtitle}</p></div><button class="quiet-button region-select" data-page="map">${icon('map')}${tr(REGIONS[state.region].name)}${icon('down')}</button></div>`;
@@ -219,7 +231,9 @@ function openModal(type) {
   if (type === 'guide') body = `<p class="guide-intro">${tr('helpIntro')}</p>${['Battle', 'Upgrade', 'Capture', 'Offline', 'Boss'].map((key, i) => `<div class="guide-row"><span>0${i + 1}</span><div><h3>${tr(`help${key}`)}</h3><p>${tr(`help${key}Desc`)}</p></div></div>`).join('')}`;
   if (type === 'offline') body = `<div class="offline-art">${img(101)}${img(107)}${img(113)}</div><p class="center">${tr('offlineDesc')}</p><p class="offline-duration">${icon('clock')}${tr('offlineTime', { hours: Math.floor(offline.seconds / 3600), minutes: Math.floor(offline.seconds / 60) % 60 })}</p><div class="offline-rewards"><div>${icon('coin')}<strong>+${num(offline.coins)}</strong><span>${tr('coins')}</span></div><div>${icon('spark')}<strong>+${num(offline.xp)}</strong><span>${tr('offlineXp')}</span></div></div><p class="center">${tr('offlineMaterial')} · ${tr(`material${offline.region ?? state.region}`)} +${offline.materials ?? 0}</p><button class="primary-button wide" data-action="close">${tr('continue')}${icon('arrow')}</button>`;
   if (type === 'reset') body = `<p>${tr('resetDesc')}</p><div class="settings-actions"><button class="secondary-button" data-action="close">${tr('cancel')}</button><button class="danger-button" data-action="confirmReset">${tr('confirmReset')}</button></div>`;
+  if (type === 'settings') body = musicSettingsMarkup(tr) + body;
   $('#modal-root').innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><button class="icon-button modal-close" data-action="close" aria-label="${tr('close')}">${icon('close')}</button><span class="modal-emblem">${icon(type === 'settings' ? 'settings' : type === 'guide' ? 'compass' : 'leaf')}</span><h2 id="modal-title">${title}</h2>${body}</section></div>`;
+  updateMusicControls(music.snapshot(),tr);
   $('.modal').focus();
 }
 function closeModal() { modal = null; $('#modal-root').innerHTML = ''; (window.matchMedia('(max-width:760px)').matches ? $('.mobile-settings') : $('[data-action="settings"]'))?.focus(); }
@@ -230,6 +244,12 @@ function animateAttack() {
   $('#damage-number').textContent = `−${state.lastDamage ?? game.power(state)}`;
 }
 function handleAction(action) {
+  if (action === 'music-toggle' || action === 'music-retry') {
+    const value=music.snapshot();
+    if(action==='music-retry'||!value.enabled||['waiting','error'].includes(value.status))music.enable();
+    else music.disable();
+    return;
+  }
   if (action === 'pause') { state.running = !state.running; lastTick = performance.now(); persist(); }
   if (action === 'speed') { state.settings.speed = state.settings.speed === 1 ? 2 : 1; applyTheme(state); persist(); }
   if (action === 'horde-pulse') { if(triggerHordePulse(horde, state))persist();refresh(); return; }
@@ -458,6 +478,7 @@ document.addEventListener('click', event => {
   persist(); refresh();
 });
 document.addEventListener('change', async event => {
+  if (event.target.id === 'music-enabled') { event.target.checked ? music.enable() : music.disable(); return; }
   if(event.target.id==='horde-tier'){setChallengeTier(horde,event.target.value);refresh();return;}
   if(event.target.id==='career-partner'){selectedCareer=event.target.value;renderSecondary();return;}
   if(event.target.id==='c4-training-partner'){
@@ -531,10 +552,23 @@ document.addEventListener('keydown', event => {
 document.addEventListener('keyup', event => {
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(event.code)) setHordeDirection(horde,0,0);
 });
+document.addEventListener('input', event => {
+  if (event.target.id === 'music-volume') music.setVolume(Number(event.target.value) / 100);
+});
+// 已保存开启偏好时也先等待本页的一次真实操作，避免浏览器自动播放拦截。
+function unlockMusic(event) {
+  if (!event.isTrusted || event.target.closest?.('[data-action^="music-"],#music-enabled')) return;
+  music.unlock();
+}
+document.addEventListener('pointerdown',unlockMusic,true);
+document.addEventListener('keydown',unlockMusic,true);
+window.addEventListener('pagehide', () => music.setHidden(true));
+window.addEventListener('pageshow', () => music.setHidden(document.hidden));
 window.addEventListener('pagehide', persist);
 window.addEventListener('pagehide', dismissDexStage);
 window.addEventListener('pagehide', clearCreatureAnimations);
 document.addEventListener('visibilitychange', () => {
+  music.setHidden(document.hidden);
   if (document.hidden) {persist();clearCreatureAnimations();}
   else {
     const result = game.settleOffline(state);settleCamp(state);
@@ -562,12 +596,14 @@ function runHordeFrame(now) {
       if (horde.packs !== beforePacks || (!beforeFinished && horde.finished) || (horde.familyCastRevision??0)!==beforeFamilyCast || collectionChanged) persist();
       if(page==='adventure'&&((horde.familyCastRevision??0)!==beforeFamilyCast||collectionChanged))updateHordePanels(horde,state,tr,icon);
     }
+    syncMusic();
     if (page === 'adventure'&&!document.querySelector('#standalone-training')) renderHordeCanvas($('#horde-canvas'), horde, state);
   } else hordeAccum = 0;
   requestAnimationFrame(runHordeFrame);
 }
 document.addEventListener('error',handleCampArtError,true);
 shell();
+music.setHidden(document.hidden);
 requestAnimationFrame(runHordeFrame);
 if (loaded.recovered) toast('recovered');
 if (offline.coins) openModal('offline');
