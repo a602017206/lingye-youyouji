@@ -2,6 +2,7 @@ import { SPECIES } from './data.js';
 import {deliveryMessages} from './horde-delivery-messages.js';
 import {journeyMessages} from './journey-collection-messages.js';
 import {musicMessages} from './music-messages.js';
+import {soundEffectMessages} from './sound-effect-messages.js';
 
 export const messages = {
   'zh-CN': { hordeGrade:'通关评级',hordeMissionLabel:'本区目标：',hordeMissionsurvive:'存活60秒',hordeMissionelites:'击败精英',hordeMissionguardian:'击败守护者',hordeScoutWarning:'探索伙伴使危险预警延长 {seconds} 秒',hordeSupportHealing:'治疗',hordeSupportShield:'护盾',hordeSupportControl:'控制',hordePartnerContributionTitle:'伙伴战斗贡献',hordeUnattributed:'共享及环境伤害',hordeReportTime:'战斗时长',hordeReportDamage:'总伤害',hordeReportSignatures:'家族战技',hordeReportDodges:'躲避危险',hordeReportResonance:'元素共鸣',hordeReportSupport:'支援家族',familyTalentLabel:'家族天赋',familyScoutBenefit:'探索额外奖励',familySynergyTitle:'阵容羁绊',familySynergyInactive:'至少两名指定家族伙伴同时出战可激活',familySynergyGuide:'查看全部羁绊条件',familySynergyDamage:'伤害增益',familySynergyGuard:'减伤增益',familySynergyActive:'已激活',familySynergyPending:'未激活',dexResearchTitle:'图鉴研究奖励',dexResearchDesc:'发现更多不同形态，领取一次性研究补给。',dexResearchProgress:'发现 {total} / {count} 种',
@@ -347,7 +348,7 @@ Object.assign(messages['zh-TW'],{
  skillDescradiantAegis:'光羽獅鷲系專屬 · 蓄力{windup}秒後治療小隊{healing}%最大生命並增加{shield}%護盾，總盾上限16%；冷卻{seconds}秒。',
  familyActiveGuide:'家族專屬技佔用原主動槽，可替換通用技；先蓄力再生效，隨家族天賦強化，控場/守護專精分別增強控制/護盾。換裝保留冷卻，空擊不返冷卻；離隊或進化中斷舊施法。',
 });
-for(const locale of ['zh-CN','zh-TW'])Object.assign(messages[locale],journeyMessages[locale],deliveryMessages[locale],musicMessages[locale]);
+for(const locale of ['zh-CN','zh-TW'])Object.assign(messages[locale],journeyMessages[locale],deliveryMessages[locale],musicMessages[locale],soundEffectMessages[locale]);
 const traditionalMap = Object.fromEntries(pairs.map(pair => [...pair]));
 function toTraditional(text) { return [...text].map(char => traditionalMap[char] ?? char).join(''); }
 export function t(key, params = {}, locale = 'zh-CN') {

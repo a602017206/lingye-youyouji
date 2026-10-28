@@ -31,6 +31,9 @@ import { setSkillSlot } from './skill-loadouts.js';
 import {trainCareer} from './partner-careers.js';
 import {createMusicPlayer,musicTrackFor} from './background-music.js';
 import {musicSettingsMarkup,updateMusicControls} from './music-view.js';
+import {createSoundEffects} from './sound-effects.js';
+import {createBattleSoundObserver} from './battle-sound-events.js';
+import {soundEffectSettingsMarkup,updateSoundEffectControls} from './sound-effect-view.js';
 
 const paths = {
   leaf: '<path d="M20 4C10 2 3 7 5 16c7 3 15-2 15-12Z"/><path d="m4 21 11-11"/>',
@@ -98,6 +101,9 @@ const music = createMusicPlayer({
   },
   onChange: value => updateMusicControls(value,tr),
 });
+const soundEffects=createSoundEffects({onChange:value=>updateSoundEffectControls(value,tr)});
+const observeBattleSound=createBattleSoundObserver();
+function playBattleSounds(h,audible){for(const kind of observeBattleSound(h,audible))soundEffects.play(kind);}
 function syncMusic() { music.select(musicTrackFor(page,horde,!!document.querySelector('#standalone-training'))); }
 const name = id => creatureName(id, state.settings.locale);
 const num = n => Math.floor(n).toLocaleString(state.settings.locale);
@@ -231,9 +237,10 @@ function openModal(type) {
   if (type === 'guide') body = `<p class="guide-intro">${tr('helpIntro')}</p>${['Battle', 'Upgrade', 'Capture', 'Offline', 'Boss'].map((key, i) => `<div class="guide-row"><span>0${i + 1}</span><div><h3>${tr(`help${key}`)}</h3><p>${tr(`help${key}Desc`)}</p></div></div>`).join('')}`;
   if (type === 'offline') body = `<div class="offline-art">${img(101)}${img(107)}${img(113)}</div><p class="center">${tr('offlineDesc')}</p><p class="offline-duration">${icon('clock')}${tr('offlineTime', { hours: Math.floor(offline.seconds / 3600), minutes: Math.floor(offline.seconds / 60) % 60 })}</p><div class="offline-rewards"><div>${icon('coin')}<strong>+${num(offline.coins)}</strong><span>${tr('coins')}</span></div><div>${icon('spark')}<strong>+${num(offline.xp)}</strong><span>${tr('offlineXp')}</span></div></div><p class="center">${tr('offlineMaterial')} · ${tr(`material${offline.region ?? state.region}`)} +${offline.materials ?? 0}</p><button class="primary-button wide" data-action="close">${tr('continue')}${icon('arrow')}</button>`;
   if (type === 'reset') body = `<p>${tr('resetDesc')}</p><div class="settings-actions"><button class="secondary-button" data-action="close">${tr('cancel')}</button><button class="danger-button" data-action="confirmReset">${tr('confirmReset')}</button></div>`;
-  if (type === 'settings') body = musicSettingsMarkup(tr) + body;
+  if (type === 'settings') body = musicSettingsMarkup(tr) + soundEffectSettingsMarkup(tr) + body;
   $('#modal-root').innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1"><button class="icon-button modal-close" data-action="close" aria-label="${tr('close')}">${icon('close')}</button><span class="modal-emblem">${icon(type === 'settings' ? 'settings' : type === 'guide' ? 'compass' : 'leaf')}</span><h2 id="modal-title">${title}</h2>${body}</section></div>`;
   updateMusicControls(music.snapshot(),tr);
+  updateSoundEffectControls(soundEffects.snapshot(),tr);
   $('.modal').focus();
 }
 function closeModal() { modal = null; $('#modal-root').innerHTML = ''; (window.matchMedia('(max-width:760px)').matches ? $('.mobile-settings') : $('[data-action="settings"]'))?.focus(); }
@@ -244,6 +251,7 @@ function animateAttack() {
   $('#damage-number').textContent = `−${state.lastDamage ?? game.power(state)}`;
 }
 function handleAction(action) {
+  if(action==='sfx-retry'){void soundEffects.enable();return;}
   if (action === 'music-toggle' || action === 'music-retry') {
     const value=music.snapshot();
     if(action==='music-retry'||!value.enabled||['waiting','error'].includes(value.status))music.enable();
@@ -292,6 +300,7 @@ function handleAction(action) {
   if (action === 'horde-mode') { horde.moveMode = horde.moveMode==='hold'?'auto':'hold'; setHordeDirection(horde,0,0); refresh(); return; }
   if (action === 'horde-capture') {
     const result = captureHordeTarget(horde, state);
+    if(result==='success')soundEffects.play('capture');
     toast(result === 'success' ? 'captured' : result === 'noTarget' ? 'hordeNoTarget' : result === 'unavailable' ? 'needBalls' : 'captureFailed');
     persist(); refresh(); return;
   }
@@ -302,6 +311,7 @@ function handleAction(action) {
   if (action === 'capture') {
     if (!state.balls) return toast('needBalls');
     const result = game.capture(state);
+    if(result)soundEffects.play('capture');
     toast(result ? 'captured' : 'captureFailed');
   }
   if (action === 'ultimate' && game.ultimate(state)) $('#battle-stage')?.classList.add('ultimate-flash');
@@ -327,6 +337,8 @@ function handleAction(action) {
   refresh();
 }
 document.addEventListener('click', event => {
+  const preview=event.target.closest('[data-sfx-preview]');
+  if(preview){soundEffects.play(preview.dataset.sfxPreview);return;}
   if(event.target.closest('[data-training-open]')){
     releaseCreatureAnimations('horde');
     const arena=createTrainingArena(),root=document.createElement('div');
@@ -355,6 +367,7 @@ document.addEventListener('click', event => {
     let last=performance.now(),accum=0;
     const frame=now=>{if(!root.isConnected)return;if(document.hidden){last=now;accum=0;requestAnimationFrame(frame);return;}accum=Math.min(.1,accum+(now-last)/1000);last=now;let changed=false;
       while(accum>=1/30){const before=arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed;stepTrainingArena(arena);accum-=1/30;if(before!==arena.step+'|'+arena.horde.pending.join(',')+'|'+arena.finished+'|'+arena.failed)changed=true;}
+      playBattleSounds(arena.horde,true);
       if(changed)draw();else renderHordeCanvas(root.querySelector('#training-canvas'),arena.horde,arena.state);
       requestAnimationFrame(frame);
     };requestAnimationFrame(frame);return;
@@ -478,6 +491,7 @@ document.addEventListener('click', event => {
   persist(); refresh();
 });
 document.addEventListener('change', async event => {
+  if (event.target.id === 'sfx-enabled') { event.target.checked ? void soundEffects.enable() : soundEffects.disable(); return; }
   if (event.target.id === 'music-enabled') { event.target.checked ? music.enable() : music.disable(); return; }
   if(event.target.id==='horde-tier'){setChallengeTier(horde,event.target.value);refresh();return;}
   if(event.target.id==='career-partner'){selectedCareer=event.target.value;renderSecondary();return;}
@@ -553,22 +567,25 @@ document.addEventListener('keyup', event => {
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'].includes(event.code)) setHordeDirection(horde,0,0);
 });
 document.addEventListener('input', event => {
+  if (event.target.id === 'sfx-volume') soundEffects.setVolume(Number(event.target.value) / 100);
   if (event.target.id === 'music-volume') music.setVolume(Number(event.target.value) / 100);
 });
 // 已保存开启偏好时也先等待本页的一次真实操作，避免浏览器自动播放拦截。
 function unlockMusic(event) {
+  if (event.isTrusted && !event.target.closest?.('[data-action="sfx-retry"],#sfx-enabled')) void soundEffects.unlock();
   if (!event.isTrusted || event.target.closest?.('[data-action^="music-"],#music-enabled')) return;
   music.unlock();
 }
 document.addEventListener('pointerdown',unlockMusic,true);
 document.addEventListener('keydown',unlockMusic,true);
-window.addEventListener('pagehide', () => music.setHidden(true));
-window.addEventListener('pageshow', () => music.setHidden(document.hidden));
+window.addEventListener('pagehide', () => {music.setHidden(true);void soundEffects.setHidden(true);});
+window.addEventListener('pageshow', () => {music.setHidden(document.hidden);void soundEffects.setHidden(document.hidden);});
 window.addEventListener('pagehide', persist);
 window.addEventListener('pagehide', dismissDexStage);
 window.addEventListener('pagehide', clearCreatureAnimations);
 document.addEventListener('visibilitychange', () => {
   music.setHidden(document.hidden);
+  void soundEffects.setHidden(document.hidden);
   if (document.hidden) {persist();clearCreatureAnimations();}
   else {
     const result = game.settleOffline(state);settleCamp(state);
@@ -597,6 +614,7 @@ function runHordeFrame(now) {
       if(page==='adventure'&&((horde.familyCastRevision??0)!==beforeFamilyCast||collectionChanged))updateHordePanels(horde,state,tr,icon);
     }
     syncMusic();
+    if(!document.querySelector('#standalone-training'))playBattleSounds(horde,page==='adventure');
     if (page === 'adventure'&&!document.querySelector('#standalone-training')) renderHordeCanvas($('#horde-canvas'), horde, state);
   } else hordeAccum = 0;
   requestAnimationFrame(runHordeFrame);
@@ -604,6 +622,7 @@ function runHordeFrame(now) {
 document.addEventListener('error',handleCampArtError,true);
 shell();
 music.setHidden(document.hidden);
+void soundEffects.setHidden(document.hidden);
 requestAnimationFrame(runHordeFrame);
 if (loaded.recovered) toast('recovered');
 if (offline.coins) openModal('offline');
